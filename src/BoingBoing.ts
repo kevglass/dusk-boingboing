@@ -1,4 +1,4 @@
-import { Players } from "rune-games-sdk";
+import { InterpolatorLatency, Players } from "rune-games-sdk";
 import { Controls, GameEventType, GameState, GameUpdate, gameOver, platformWidth, roundTime } from "./logic";
 import { InputEventListener, drawImage, drawText, fillCircle, fillRect, loadImage, popState, pushState, registerInputEventListener, screenHeight, screenWidth, setAlpha, stringWidth, translate, updateGraphics } from "./renderer/graphics";
 import { Sound, loadSound, playSound } from "./renderer/sound";
@@ -65,6 +65,9 @@ export class BoingBoing implements InputEventListener {
     };
     lastControlsSent = 0;
 
+    avatarImages: Record<string, HTMLImageElement> = {};
+    interpolators: Record<string, InterpolatorLatency<number[]>> = {};
+
     constructor() {
         loadAll().then(() => {
             this.sfxBoing = loadSound(ASSETS["./assets/boing.mp3"]);
@@ -127,12 +130,30 @@ export class BoingBoing implements InputEventListener {
         this.players = update.players;
         this.localPlayerId = update.yourPlayerId;
 
+        if (update.futureGame) {
+            for (const jumper of this.game.jumpers) {
+                if (jumper.id !== this.localPlayerId) {
+                    if (!this.interpolators[jumper.id]) {
+                        this.interpolators[jumper.id] = Rune.interpolatorLatency<number[]>({ maxSpeed: 0.05 });
+                    }
+
+                    const futureJumper = update.futureGame.jumpers.find(j => j.id === jumper.id);
+                    if (futureJumper) {
+                        this.interpolators[jumper.id].update({
+                            game: [jumper.x, jumper.y],
+                            futureGame: [futureJumper.x, futureJumper.y]
+                        })
+                    }
+                }
+            }
+        }
         for (const event of this.game.events) {
             if (event.type === GameEventType.BOUNCE && event.playerId === this.localPlayerId) {
                 playSound(this.sfxBoing);
             }
             if (event.type === GameEventType.WIN) {
                 playSound(this.sfxFanfare);
+                this.interpolators = {};
             }
             if (event.type === GameEventType.DIE && event.playerId === this.localPlayerId) {
                 playSound(this.sfxUrgh);
@@ -212,8 +233,12 @@ export class BoingBoing implements InputEventListener {
             const jumperScale = scale * 0.5;
             const width = Math.floor(frame.width * jumperScale);
             const height = Math.floor(frame.height * jumperScale);
-            const x = Math.floor(jumper.x * screenWidth()) - Math.floor(width / 2);
-            const y = screenHeight() - (Math.floor(jumper.y * screenHeight()) + (height * this.jumperHeights[jumper.type]));
+
+            const jumperX = this.interpolators[jumper.id] ? this.interpolators[jumper.id].getPosition()[0] : jumper.x;
+            const jumperY = this.interpolators[jumper.id] ? this.interpolators[jumper.id].getPosition()[1] : jumper.y;
+
+            const x = Math.floor(jumperX * screenWidth()) - Math.floor(width / 2);
+            const y = screenHeight() - (Math.floor(jumperY * screenHeight()) + (height * this.jumperHeights[jumper.type]));
             drawImage(frame, x, y, width, height);
 
             if (jumper.id === this.localPlayerId) {
@@ -253,8 +278,8 @@ export class BoingBoing implements InputEventListener {
 
             const secs = remaining % 60;
             const mins = Math.floor(remaining / 60);
-            const timeStr = mins + ":" + (secs < 10 ? "0" : "")  + secs;
-            fillRect(0,0,screenWidth(),38,"rgba(0,0,0,0.5");
+            const timeStr = mins + ":" + (secs < 10 ? "0" : "") + secs;
+            fillRect(0, 0, screenWidth(), 38, "rgba(0,0,0,0.5");
             drawText(screenWidth() - 5 - stringWidth(timeStr, 30), 34, timeStr, 30, "black");
             drawText(screenWidth() - 5 - stringWidth(timeStr, 30), 30, timeStr, 30, "white");
         }
@@ -292,17 +317,55 @@ export class BoingBoing implements InputEventListener {
 
             const startWidth = Math.floor(screenWidth() / 3);
             const startHeight = Math.floor((startWidth / this.startButton.width) * this.startButton.height);
-            drawImage(this.startButton, Math.floor((screenWidth() - startWidth) / 2), screenHeight() - (startHeight * 1.2), startWidth, startHeight);
+            drawImage(this.startButton, Math.floor((screenWidth() - startWidth) / 2), screenHeight() - (startHeight * 1.2) - 110, startWidth, startHeight);
+
+            const cols = ["rgba(0,0,0,0.7)", "rgba(10,10,10,0.7)"];
+            const lines: [{ avatar: HTMLImageElement | null, name: string | null, wins: string, best: string }] = [
+                { avatar: null, name: null, wins: "Wins", best: "Best" },
+            ];
+
+            if (this.players) {
+                for (const id of Object.keys(this.players)) {
+                    if (!this.avatarImages[id]) {
+                        this.avatarImages[id] = loadImage(this.players[id].avatarUrl);
+                    }
+                    lines.push({
+                        avatar: this.avatarImages[id],
+                        name: this.players[id].displayName,
+                        wins: "" + (this.game.scores[id] ?? 0),
+                        best: "" + Math.floor((this.game.best[id] ?? 0) * 10) + "m",
+                    })
+                }
+            }
+            for (let i = 0; i < 6; i++) {
+                fillRect(0, (screenHeight() - 110) + (i * 20), screenWidth(), 20, cols[i % 2]);
+                const line = lines[i];
+                if (line) {
+                    if (line.avatar) {
+                        drawImage(line.avatar, 5, (screenHeight() - 110) + (i * 20) + 2, 16, 16);
+                    }
+                    if (line.name) {
+                        drawText(25, (screenHeight() - 110) + (i * 20) + 14, line.name, 12, "white");
+                    }
+                    if (line.wins) {
+                        drawText(screenWidth() - 100 - Math.floor(stringWidth(line.wins, 12) / 2), (screenHeight() - 110) + (i * 20) + 14, line.wins, 12, "white");
+                    }
+                    if (line.best) {
+                        drawText(screenWidth() - 30 - Math.floor(stringWidth(line.best, 12) / 2), (screenHeight() - 110) + (i * 20) + 14, line.best, 12, "white");
+                    }
+                }
+            }
+
         } else if (!this.game.jumping) {
             const tilStart = Math.ceil((this.game.startAt - Rune.gameTime()) / 1000);
             if (tilStart <= 5 && tilStart > 0) {
                 const secs = "" + tilStart;
-                fillCircle(Math.floor(screenWidth() / 2), 100, 90, "rgba(0,0,0,0.5)")
-                drawText(Math.floor((screenWidth() - stringWidth(secs, 80)) / 2), 130, secs, 80, "white");
+                fillCircle(Math.floor(screenWidth() / 2), 150, 90, "rgba(0,0,0,0.5)")
+                drawText(Math.floor((screenWidth() - stringWidth(secs, 80)) / 2), 180, secs, 80, "white");
             }
             this.drawInstructions();
         } else if (gameOver(this.game) && this.players) {
-            const winner = [...this.game.jumpers].sort((a,b) => b.highest - a.highest)[0];
+            const winner = [...this.game.jumpers].sort((a, b) => b.highest - a.highest)[0];
             const name = this.players[winner.id].displayName;
             const lines = [];
             lines.push(name);
@@ -311,10 +374,10 @@ export class BoingBoing implements InputEventListener {
             const frame = this.jumpers[winner.type].idle;
             const x = Math.floor((screenWidth() - frame.width) / 2);
             drawImage(frame, x, 50, frame.width, frame.height);
-            fillRect(0, frame.height+40, screenWidth(), 135, "rgba(0,0,0,0.5)")
+            fillRect(0, frame.height + 40, screenWidth(), 135, "rgba(0,0,0,0.5)")
             let offset = 0;
             for (const line of lines) {
-                drawText(Math.floor((screenWidth() - stringWidth(line, 30)) / 2), frame.height+80+offset, line, 30, "white");
+                drawText(Math.floor((screenWidth() - stringWidth(line, 30)) / 2), frame.height + 80 + offset, line, 30, "white");
                 offset += 35;
             }
         }
@@ -328,16 +391,16 @@ export class BoingBoing implements InputEventListener {
 
         if (frame === 0 || frame === 2) {
             drawImage(this.handOff, 5, screenHeight() - height, width, height);
-        } 
+        }
         if (frame === 1 || frame === 3) {
             drawImage(this.handOn, 5, screenHeight() - height, width, height);
-        } 
+        }
         if (frame === 4 || frame === 6) {
             drawImage(this.handOff, screenWidth() - 5 - width, screenHeight() - height, width, height);
-        } 
+        }
         if (frame === 5 || frame === 7) {
             drawImage(this.handOn, screenWidth() - 5 - width, screenHeight() - height, width, height);
-        } 
+        }
     }
 
     waitingToJoin(): boolean {
@@ -362,7 +425,7 @@ export class BoingBoing implements InputEventListener {
             const boxHeight = Math.floor((boxWidth / this.box.width) * this.box.height);
             const startWidth = Math.floor(screenWidth() / 3);
             const startHeight = Math.floor((startWidth / this.startButton.width) * this.startButton.height);
-            if (y > screenHeight() - (startHeight * 1.2)) {
+            if (y > screenHeight() - (startHeight * 1.2) - 110) {
                 // start button
                 Rune.actions.join({ type: this.selectedType });
                 playSound(this.sfxClick);

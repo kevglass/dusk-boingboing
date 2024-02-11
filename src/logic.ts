@@ -50,7 +50,9 @@ export interface GameState {
   jumping: boolean,
   gameRestartTime: number,
   theme: number,
-  events: GameEvent[]
+  events: GameEvent[],
+  scores: Record<string, number>;
+  best: Record<string, number>;
 }
 
 // Quick type so I can pass the complex object that is the 
@@ -123,7 +125,9 @@ Rune.initLogic({
       jumping: false,
       gameRestartTime: -1,
       theme: 0,
-      events: []
+      events: [],
+      scores: {},
+      best: {}
     };
 
     startGame(initialState);
@@ -134,8 +138,9 @@ Rune.initLogic({
     playerJoined: () => {
       // do nothing
     },
-    playerLeft: () => {
+    playerLeft(playerId, context) {
       // do nothing
+      context.game.jumpers = context.game.jumpers.filter(j => j.id !== playerId);
     }
   },
   updatesPerSecond: 30,
@@ -147,6 +152,11 @@ Rune.initLogic({
       if (game.gameRestartTime === -1 && gameOver(game)) {
         game.gameRestartTime = Rune.gameTime() + 3000;
         game.events.push({ type: GameEventType.WIN });
+        const winner = [...game.jumpers].sort((a,b) => b.highest - a.highest)[0];
+        if (game.scores[winner.id] === undefined) {
+          game.scores[winner.id] = 0;
+        }
+        game.scores[winner.id]++;
       }
     }
     if (game.gameRestartTime !== -1 && Rune.gameTime() > game.gameRestartTime) {
@@ -171,6 +181,9 @@ Rune.initLogic({
         }
       }
     } else {
+      if (gameOver(game)) {
+        return;
+      }
       for (const jumper of game.jumpers) {
         if (jumper.dead) {
           continue;
@@ -206,6 +219,9 @@ Rune.initLogic({
         }
 
         jumper.highest = Math.max(jumper.highest, jumper.y);
+        if (!game.best[jumper.id] || jumper.highest > game.best[jumper.id]) {
+          game.best[jumper.id] = jumper.highest;
+        }
 
         if (jumper.y < jumper.highest - 0.5) {
           // fell off screen
