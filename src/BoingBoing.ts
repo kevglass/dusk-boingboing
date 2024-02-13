@@ -32,6 +32,7 @@ export class BoingBoing implements InputEventListener {
 
     backgrounds: BackgroundSprite[] = [];
     platforms: HTMLImageElement[] = [];
+    platformsBroken: HTMLImageElement[] = [];
     jumpers: JumperSprite[] = [];
     box!: HTMLImageElement;
     boxGrey!: HTMLImageElement;
@@ -39,6 +40,7 @@ export class BoingBoing implements InputEventListener {
     arrow!: HTMLImageElement;
     handOff!: HTMLImageElement;
     handOn!: HTMLImageElement;
+    spikes!: HTMLImageElement;
 
     sfxBoing!: Sound;
     sfxClick!: Sound;
@@ -67,6 +69,7 @@ export class BoingBoing implements InputEventListener {
 
     avatarImages: Record<string, HTMLImageElement> = {};
     interpolators: Record<string, InterpolatorLatency<number[]>> = {};
+    lastBoingSfx = 0;
 
     constructor() {
         loadAll().then(() => {
@@ -81,6 +84,7 @@ export class BoingBoing implements InputEventListener {
             this.arrow = loadImage(ASSETS["./assets/Ui/arrow.png"]);
             this.handOn = loadImage(ASSETS["./assets/Hand/Click.png"]);
             this.handOff = loadImage(ASSETS["./assets/Hand/Clicked.png"]);
+            this.spikes = loadImage(ASSETS["./assets/OtherAssets/obstacle.png"]);
 
             const jumperIds = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
             for (const id of jumperIds) {
@@ -100,6 +104,7 @@ export class BoingBoing implements InputEventListener {
                 };
 
                 this.platforms[this.platforms.length] = loadImage(ASSETS["./assets/OtherAssets/Platformer" + id + ".png"]);
+                this.platformsBroken[this.platformsBroken.length] = loadImage(ASSETS["./assets/OtherAssets/Platformer" + id + "-broken.png"]);
             }
             this.assetsLoaded = true;
         })
@@ -149,7 +154,10 @@ export class BoingBoing implements InputEventListener {
         }
         for (const event of this.game.events) {
             if (event.type === GameEventType.BOUNCE && event.playerId === this.localPlayerId) {
-                playSound(this.sfxBoing);
+                if (Date.now() - this.lastBoingSfx > 200) {
+                    this.lastBoingSfx = Date.now();
+                    playSound(this.sfxBoing);
+                }
             }
             if (event.type === GameEventType.WIN) {
                 playSound(this.sfxFanfare);
@@ -211,7 +219,6 @@ export class BoingBoing implements InputEventListener {
 
         pushState();
         translate(0, scroll);
-        const platformSprite = this.platforms[theme];
         const platformSpriteWidth = Math.floor(screenWidth() / 6);
         const scale = (platformSpriteWidth / this.platforms[0].width);
         const platformHeight = scale * this.platforms[0].height;
@@ -220,8 +227,21 @@ export class BoingBoing implements InputEventListener {
             if (!platform) {
                 continue;
             }
+            const platformSprite = platform.faller ? this.platformsBroken[theme] : this.platforms[theme];
+
             const widthScale = platform.width / platformWidth;
             drawImage(platformSprite, Math.floor(platform.x * screenWidth()), screenHeight() - Math.floor(platform.y * screenHeight()), platformSpriteWidth * widthScale, platformHeight);
+            
+        }
+        for (const platform of this.game.platforms) {
+            if (!platform) {
+                continue;
+            }
+            if (platform.spikes) {
+                const widthScale = platform.width / platformWidth;
+                const spikesHeight = platformHeight / 2;
+                drawImage(this.spikes, Math.floor(platform.x * screenWidth()), screenHeight() - Math.floor(platform.y * screenHeight()) - (spikesHeight * 0.8), platformSpriteWidth * widthScale, spikesHeight);
+            }
         }
 
         for (const jumper of this.game.jumpers) {

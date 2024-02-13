@@ -41,6 +41,8 @@ export interface Platform {
   x: number; // as a factor of screen width
   y: number; // as a factor of screen height
   width: number;
+  spikes: boolean;
+  faller: boolean;
 }
 
 export interface GameState {
@@ -77,11 +79,19 @@ declare global {
   const Rune: RuneClient<GameState, GameActions>
 }
 
-function generateRow(state: GameState, i: number) {
-  const x = Math.random() * (1 - platformWidth);
+function generatePlatform(state: GameState, i: number, requiredPlatform: boolean): Platform {
+  const x = requiredPlatform 
+        ? 0.5 + (Math.random() * platformWidth * 2) - platformWidth
+        : Math.random() * (1 - platformWidth);
+
+  const spikes = !requiredPlatform && Math.random() < (0.1 + (i / 3000));
+  const faller = !requiredPlatform && !spikes && (Math.random() < (0.1 + (i / 3000)));
+
   state.platforms[i] = {
-    x, y: i * rowHeight, width: platformWidth
+    x, y: i * rowHeight, width: platformWidth, spikes, faller
   }
+
+  return state.platforms[i];
 }
 
 export function gameOver(state: GameState | undefined): boolean {
@@ -103,10 +113,28 @@ function startGame(state: GameState): void {
   state.platforms[0] = {
     x: -platformWidth,
     y: rowHeight,
-    width: 2
+    width: 2,
+    spikes: false,
+    faller: false
   }
+
+  // level generation follows the rules
+  // 1) There must be a platform that can be used every 5 rows, otherwise
+  //    people can get stuck
+  // 2) Springs are random
+  // 3) Spikes can be placed but don't count as a valid platform for rule 1
+  // 4) Platforms get less likely as we get higher
+  let lastValidRow = 0;
   for (let i = 5; i < 1000; i++) {
-    generateRow(state, i);
+    if (i - lastValidRow >= 5) {
+      generatePlatform(state, i, true);
+      lastValidRow = i;
+    } else if (Math.random() < (1 - Math.min(0.8, ((i / 50) * 0.1)))) {
+      const platform = generatePlatform(state, i, false);
+      if (!platform.spikes && !platform.faller) {
+        lastValidRow = i;
+      }
+    }
   }
 
   state.startAt = -1;
