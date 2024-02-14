@@ -484,12 +484,12 @@ export class BoingBoing implements InputEventListener {
                 // offscreen so lets draw a marker
                 if (localPlayer.highest < jumperY) {
                     if (this.players) {
-                        outlineText(x - Math.floor(stringWidth(this.players[localPlayer.id].displayName, 16) / 2), 70, this.players[localPlayer.id].displayName, 16, "white", "black", 2);
+                        outlineText(x - Math.floor(stringWidth(this.players[jumper.id].displayName, 16) / 2), 70, this.players[localPlayer.id].displayName, 16, "white", "black", 2);
                     }
                     drawImage(this.arrowUp, x - 16, 32, this.arrowUp.width, this.arrowUp.height);
                 } else {
                     if (this.players) {
-                        outlineText(x - Math.floor(stringWidth(this.players[localPlayer.id].displayName, 16) / 2), screenHeight() - 57, this.players[localPlayer.id].displayName, 16, "white", "black", 2);
+                        outlineText(x - Math.floor(stringWidth(this.players[jumper.id].displayName, 16) / 2), screenHeight() - 57, this.players[localPlayer.id].displayName, 16, "white", "black", 2);
                     }
                     drawImage(this.arrowDown, x - 16, screenHeight() - 50, this.arrowDown.width, this.arrowDown.height);
                 }
