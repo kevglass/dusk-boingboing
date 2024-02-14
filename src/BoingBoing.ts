@@ -3,89 +3,157 @@ import { Controls, GameEventType, GameState, GameUpdate, gameOver, platformWidth
 import { InputEventListener, drawImage, drawText, fillCircle, fillRect, loadImage, outlineText, popState, pushState, registerInputEventListener, scale, screenHeight, screenWidth, stringWidth, translate, updateGraphics } from "./renderer/graphics";
 import { Sound, loadSound, playSound } from "./renderer/sound";
 
+const TENTH_OF_A_SECOND_IN_MS = 100;
+
+// this is a quick way of making all the assets available
+// as URLs to be loaded without having to import each one
+// The import.meta.glob is a vite thing.
 const ASSETS_IMPORTS = import.meta.glob("./assets/**/*", {
     query: '?url',
     import: 'default',
 });
+// map from the name of the assets (the path) to the
+// URL it's hosted at
 const ASSETS: Record<string, string> = {};
 
-async function loadAll() {
+// Resolve all the imports for the assets in the src folder
+async function resolveAllAssetImports() {
     for (const path in ASSETS_IMPORTS) {
         ASSETS[path] = (await ASSETS_IMPORTS[path]()) as string;
     }
 }
 
+// A background in the game has three layers that are displayed
+// over each other and scrolled at different rates to give the 
+// parallax 
 interface BackgroundSprite {
     layer1: HTMLImageElement;
     layer2: HTMLImageElement;
     layer3: HTMLImageElement;
 }
 
+// Any one of our jumper characters has 3 states and an image
+// for each: 
+// idle (on the way down)
+// jump (on the way up)
+// die (on the way out)
 interface JumperSprite {
     idle: HTMLImageElement;
     jump: HTMLImageElement;
     die: HTMLImageElement;
 }
 
+// An enemy sprite in this game has a series of frames of animation - 
+// for a flapping bird or bat
 type EnemySprite = HTMLImageElement[];
 
+// Main class that receives input from the user and renders the game
+// along with connecting to the Rune logic layer
 export class BoingBoing implements InputEventListener {
+    // The assets for the jumper are all random sizes, to make them look right
+    // we have the height of each asset to position the jumpers against
+    // the platforms
     jumperHeights: number[] = [0.85, 0.87, 0.87, 0.9, 0.92, 0.92, 0.8, 0.87, 0.8];
 
+    // The different themes backgrounds we have - keyed on a theme index
     backgrounds: BackgroundSprite[] = [];
+    // The different themes platforms - keyed on a theme index
     platforms: HTMLImageElement[] = [];
+    // The different themes platform that fall/are broken - keyed on a theme index
     platformsBroken: HTMLImageElement[] = [];
+    // The different character sprites we allow the player to choose
     jumpers: JumperSprite[] = [];
+    // The background box of the selected character on the character select
     box!: HTMLImageElement;
+    // The background box of the non-selected characters on the character select
     boxGrey!: HTMLImageElement;
+    // The big orange play button
     startButton!: HTMLImageElement;
+    // The green arrow that indicates which player you are
     arrow!: HTMLImageElement;
+    // The hand symbol not pressing the screen to show for instructions
     handOff!: HTMLImageElement;
+    // The hand symbol pressing the screen to show for instructions
     handOn!: HTMLImageElement;
+    // The spikes that appear on platforms
     spikes!: HTMLImageElement;
+    // The spring that appear on platforms
     spring!: HTMLImageElement;
+    // The enemy sprites keyed on the type (bat | bird)
     enemySprites: Record<string, EnemySprite> = {};
+    // The arrow that points to a player above you
     arrowUp!: HTMLImageElement;
+    // the arrow that points to a player below you
     arrowDown!: HTMLImageElement;
     
+    // Sound effect played when you hit a spring
     sfxBoing!: Sound;
+    // Sound effect played for UI interaction
     sfxClick!: Sound;
+    // Sound effect for winning the game
     sfxFanfare!: Sound;
+    // Sound effect for dieing
     sfxUrgh!: Sound;
+    // Sound effect for each jump 
     sfxJump!: Sound;
 
+    // True if all the assets have been loaded - or rather
+    // asked to load and a holder created
     assetsLoaded = false;
 
+    // The current state of the game logic received from Rune
     game?: GameState;
+    // The players that are in the Rune room 
     players?: Players;
+    // The ID of the player that is controlling this client
     localPlayerId?: string;
+    // The character type selected - randomize it to start
+    // with so we get a spread of different characters
     selectedType = Math.floor(Math.random() * 9);
+    // A ticker for animation, it just counts up and 
+    // some oscillating animations use it 
     anim = 0;
+    // A ticker for the instructions - hand clicks on and off, 
+    // and swaps left to right to show the player where to tap
     instructionTimer = 0;
 
+    // The current state of this client's controls 
     controls: Controls = {
         left: false,
         right: false
     };
 
+    // The last state of the controls sent to the game logic
     sentControls: Controls = {
         left: false,
         right: false
     };
+    // The time in MS that the last controls were sent
     lastControlsSent = 0;
 
+    // images loaded for player avatars - these are done dynamically
+    // since they won't be packed with the game
     avatarImages: Record<string, HTMLImageElement> = {};
+    // interpolators keyed on player ID used to smooth out the 
+    // movement of remote players 
     interpolators: Record<string, InterpolatorLatency<number[]>> = {};
+    // The time in ms that the last jump sound effect was played, since you
+    // can sometimes hit platforms very close together we don't want the 
+    // sound effect being spammed - it hurts your ears!
     lastJumpSfx = 0;
 
     constructor() {
-        loadAll().then(() => {
+        // resolve all the packed assets as imports and then load
+        // them all using the rendering utilities
+        resolveAllAssetImports().then(() => {
+            // loading sound effects for Web Audio
             this.sfxBoing = loadSound(ASSETS["./assets/boing.mp3"]);
             this.sfxClick = loadSound(ASSETS["./assets/click.mp3"]);
             this.sfxUrgh = loadSound(ASSETS["./assets/lose.mp3"]);
             this.sfxFanfare = loadSound(ASSETS["./assets/win.mp3"]);
             this.sfxJump = loadSound(ASSETS["./assets/jump.mp3"]);
 
+            // loading static individual images 
             this.box = loadImage(ASSETS["./assets/Ui/Box04.png"]);
             this.boxGrey = loadImage(ASSETS["./assets/Ui/Box04Grey.png"]);
             this.startButton = loadImage(ASSETS["./assets/Ui/PlayBtn.png"]);
@@ -97,6 +165,7 @@ export class BoingBoing implements InputEventListener {
             this.arrowUp = loadImage(ASSETS["./assets/arrowup.png"]);
             this.arrowDown = loadImage(ASSETS["./assets/arrowdown.png"]);
 
+            // load up the character assets
             const jumperIds = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
             for (const id of jumperIds) {
                 this.jumpers[this.jumpers.length] = {
@@ -105,8 +174,9 @@ export class BoingBoing implements InputEventListener {
                     jump: loadImage(ASSETS["./assets/Characters/0" + id + "/Jump.png"]),
                 }
             }
-            const themeIds = ["1", "2", "3", "5", "6"];
 
+            // load up the platforms and backdrops based on the theme numbers
+            const themeIds = ["1", "2", "3", "5", "6"];
             for (const id of themeIds) {
                 this.backgrounds[this.backgrounds.length] = {
                     layer1: loadImage(ASSETS["./assets/Background/0" + id + "/Layer1.png"]),
@@ -118,6 +188,7 @@ export class BoingBoing implements InputEventListener {
                 this.platformsBroken[this.platformsBroken.length] = loadImage(ASSETS["./assets/OtherAssets/Platformer" + id + "-broken.png"]);
             }
 
+            // load the enemy sprites 
             this.enemySprites["bat"] = [];
             this.enemySprites["bird"] = [];
             for (let i=1;i<5;i++) {
@@ -153,8 +224,14 @@ export class BoingBoing implements InputEventListener {
         this.players = update.players;
         this.localPlayerId = update.yourPlayerId;
 
+        // if we've got a future game to interpolate for then 
+        // update our latency based interpolators (that Rune handily
+        // gives us) so that our remote players will move smoothly
+        // while we wait for network updates
         if (update.futureGame) {
             for (const jumper of this.game.jumpers) {
+                // we don't use an interpolator for the local state since
+                // we're pretty sure that one will be smooth moving
                 if (jumper.id !== this.localPlayerId) {
                     if (!this.interpolators[jumper.id]) {
                         this.interpolators[jumper.id] = Rune.interpolatorLatency<number[]>({ maxSpeed: 0.05 });
@@ -170,20 +247,29 @@ export class BoingBoing implements InputEventListener {
                 }
             }
         }
+
+        // The logic layer runs an update loop of its own and events can 
+        // take place in it. These are recorded in the game state each frame
+        // so we can render or play sounds appropriately
         for (const event of this.game.events) {
+            // if we jumped then play a sound - only if it's us jumping and not
+            // another player or it gets very loud
             if (event.type === GameEventType.BOUNCE && event.playerId === this.localPlayerId) {
                 if (Date.now() - this.lastJumpSfx > 200) {
                     this.lastJumpSfx = Date.now();
                     playSound(this.sfxJump);
                 }
             }
+            // The game is over, celebrate!
             if (event.type === GameEventType.WIN) {
                 playSound(this.sfxFanfare);
                 this.interpolators = {};
             }
+            // The local player died, play the death sound effect
             if (event.type === GameEventType.DIE && event.playerId === this.localPlayerId) {
                 playSound(this.sfxUrgh);
             }
+            // The local player hit a spring, BOOOOOIIIINNNNNGGG!
             if (event.type === GameEventType.SPRING && event.playerId === this.localPlayerId) {
                 playSound(this.sfxBoing);
             }
@@ -192,10 +278,11 @@ export class BoingBoing implements InputEventListener {
         // so that we're not effecting the game from within the 
         // game update callback
         setTimeout(() => {
-            // send controls at most 10 times a second
+            // send controls at most 10 times a second - Rune doesn't allow
+            // more actions than that and only if the controls have changed
             if (this.sentControls.left !== this.controls.left ||
                 this.sentControls.right !== this.controls.right) {
-                if (Date.now() - this.lastControlsSent > 100) {
+                if (Date.now() - this.lastControlsSent > TENTH_OF_A_SECOND_IN_MS) {
                     Rune.actions.controls({ controls: { ...this.controls } });
                     this.sentControls.left = this.controls.left;
                     this.sentControls.right = this.controls.right;
@@ -205,18 +292,33 @@ export class BoingBoing implements InputEventListener {
         }, 1);
     }
 
+    // main render loop - we're active rendering on the assumption
+    // that if something doesn't change every frame then it's not
+    // interesting enough visually
     loop(): void {
+        // schedule the next render
         requestAnimationFrame(() => { this.loop() });
 
+        // give the utility classes a chance to update based on 
+        // screen size etc
         updateGraphics();
 
+        // wait for the assets to load the game state to initialize before
+        // rendering anything
         if (!this.assetsLoaded || !this.game) {
             return;
         }
 
+        // we'll scroll the view so our players is in the middle of the screen (that the - 0.5) - 
+        // but its not quite that the simple, we actually want to scroll the view so we're looking at the highest
+        // point that the player has reached, this is how they can fall of the screen
         const localPlayer = this.game.jumpers.find(j => j.id === this.localPlayerId);
         const scroll = Math.floor(Math.max(0, ((localPlayer?.highest ?? 0) - 0.5)) * screenHeight());
+        const highest = localPlayer?.highest ?? 0;
 
+        // background rendering, we just use two copies of each layer and render them on top of 
+        // each other offsetting by a factor of the player's view position. The factor changes per layer
+        // so things in the background scroll slower than things in the foreground
         const theme = this.game.theme;
         const background = this.backgrounds[theme];
         const backgroundHeight = Math.floor((screenWidth() / background.layer1.width) * background.layer1.height);
@@ -239,13 +341,24 @@ export class BoingBoing implements InputEventListener {
         popState();
 
         pushState();
+
+        // scroll all rendering by the current view location
         translate(0, scroll);
+
+        // calculate how big things should be - this is really important, coordinates for players
+        // platforms, enemies and other stuff are all in terms of screen size, e.g. x is 0.5 if the
+        // player is half way across the screen. So everything in turn gets scaled to the appropriate
+        // screen size. This means everyone should see the same thing no matter the screen size.
         const platformSpriteWidth = Math.floor(screenWidth() / 6);
         const generalScale = (platformSpriteWidth / this.platforms[0].width);
         const platformHeight = generalScale * this.platforms[0].height;
 
+        // render all the platforms if they're on screen
         for (const platform of this.game.platforms) {
             if (!platform) {
+                continue;
+            }
+            if (Math.abs(platform.y - highest) > 1) {
                 continue;
             }
             const platformSprite = platform.faller ? this.platformsBroken[theme] : this.platforms[theme];
@@ -254,8 +367,13 @@ export class BoingBoing implements InputEventListener {
             drawImage(platformSprite, Math.floor(platform.x * screenWidth()), screenHeight() - Math.floor(platform.y * screenHeight()), platformSpriteWidth * widthScale, platformHeight);
             
         }
+        // render the contents of the platform afterwards so platforms don't
+        // overlay items
         for (const platform of this.game.platforms) {
             if (!platform) {
+                continue;
+            }
+            if (Math.abs(platform.y - highest) > 1) {
                 continue;
             }
             if (platform.spikes) {
@@ -272,6 +390,7 @@ export class BoingBoing implements InputEventListener {
             }
         }
 
+        // render the enemies (birds and bar)
         for (const enemy of this.game.enemies) {
             const sprite = this.enemySprites[enemy.type];
             pushState();
@@ -284,25 +403,36 @@ export class BoingBoing implements InputEventListener {
             drawImage(sprite[Math.floor(this.anim * 2) % 4], -Math.floor(width / 2), -Math.floor(height / 2), width, height);
             popState();
         }
-        const myJumper = this.game.jumpers.find(j => j.id === this.localPlayerId);
 
+        // render the players jumping around
         for (const jumper of this.game.jumpers) {
+            // pick the correct character and frame of action
             const jumperSprite = this.jumpers[jumper.type];
             const frame = jumper.dead ? jumperSprite.die : jumper.vy > 0 && this.game.jumping ? jumperSprite.jump : jumperSprite.idle;
+
+            // scale everything by the screen and then down again by 
+            // half to make them look about right on screen
             const jumperScale = generalScale * 0.5;
             const width = Math.floor(frame.width * jumperScale);
             const height = Math.floor(frame.height * jumperScale);
 
+            // determine the logic position to render at either by using an interpolator
+            // or the actual position 
             const jumperX = this.interpolators[jumper.id] ? this.interpolators[jumper.id].getPosition()[0] : jumper.x;
             const jumperY = this.interpolators[jumper.id] ? this.interpolators[jumper.id].getPosition()[1] : jumper.y;
 
+            // if the player is off screen then we'll render 
+            // an arrow later, otherwise draw the character frame
             const x = Math.floor(jumperX * screenWidth()) - Math.floor(width / 2);
             const y = screenHeight() - (Math.floor(jumperY * screenHeight()) + (height * this.jumperHeights[jumper.type]));
-            if (myJumper && (jumperY < myJumper.highest - 0.5 || jumperY > myJumper.highest + 0.5)) {
+            if (localPlayer && (jumperY < localPlayer.highest - 0.5 || jumperY > localPlayer.highest + 0.5)) {
                 // offscreen so lets draw a marker
             } else {
                 drawImage(frame, x, y, width, height);
             }
+
+            // if we're at the start then we want to render a green bouncing
+            // arrow helping the player to work out which player is theirs
             if (jumper.id === this.localPlayerId) {
                 if (this.waitingToStart()) {
                     const arrowWidth = width * 0.7;
@@ -314,6 +444,8 @@ export class BoingBoing implements InputEventListener {
             }
         }
 
+        // render any players that have already died as lines across the game field
+        // showing how far they got
         if (!gameOver(this.game)) {
             for (const jumper of this.game.jumpers) {
                 if (jumper.dead) {
@@ -327,9 +459,14 @@ export class BoingBoing implements InputEventListener {
                 }
             }
         }
-        this.anim += 0.05;
         popState();
         
+        // update our animation time, this is used to drive some basic animation
+        this.anim += 0.05;
+
+        // If the jumpers are offscreen we want to render an arrow pointing to them. We want to 
+        // do this in screen space rather than in game space though so a second block here
+        // outside of the push/pop state.
         for (const jumper of this.game.jumpers) {
             if (jumper.dead) {
                 continue;
@@ -338,23 +475,21 @@ export class BoingBoing implements InputEventListener {
             const frame = jumper.dead ? jumperSprite.die : jumper.vy > 0 && this.game.jumping ? jumperSprite.jump : jumperSprite.idle;
             const jumperScale = generalScale * 0.5;
             const width = Math.floor(frame.width * jumperScale);
-            const height = Math.floor(frame.height * jumperScale);
 
             const jumperX = this.interpolators[jumper.id] ? this.interpolators[jumper.id].getPosition()[0] : jumper.x;
             const jumperY = this.interpolators[jumper.id] ? this.interpolators[jumper.id].getPosition()[1] : jumper.y;
 
             const x = Math.floor(jumperX * screenWidth()) - Math.floor(width / 2);
-            const y = screenHeight() - (Math.floor(jumperY * screenHeight()) + (height * this.jumperHeights[jumper.type]));
-            if (myJumper && (jumperY < myJumper.highest - 0.5 || jumperY > myJumper.highest + 0.5)) {
+            if (localPlayer && (jumperY < localPlayer.highest - 0.5 || jumperY > localPlayer.highest + 0.5)) {
                 // offscreen so lets draw a marker
-                if (myJumper.highest < jumperY) {
+                if (localPlayer.highest < jumperY) {
                     if (this.players) {
-                        outlineText(x - Math.floor(stringWidth(this.players[myJumper.id].displayName, 16) / 2), 70, this.players[myJumper.id].displayName, 16, "white", "black", 2);
+                        outlineText(x - Math.floor(stringWidth(this.players[localPlayer.id].displayName, 16) / 2), 70, this.players[localPlayer.id].displayName, 16, "white", "black", 2);
                     }
                     drawImage(this.arrowUp, x - 16, 32, this.arrowUp.width, this.arrowUp.height);
                 } else {
                     if (this.players) {
-                        outlineText(x - Math.floor(stringWidth(this.players[myJumper.id].displayName, 16) / 2), screenHeight() - 57, this.players[myJumper.id].displayName, 16, "white", "black", 2);
+                        outlineText(x - Math.floor(stringWidth(this.players[localPlayer.id].displayName, 16) / 2), screenHeight() - 57, this.players[localPlayer.id].displayName, 16, "white", "black", 2);
                     }
                     drawImage(this.arrowDown, x - 16, screenHeight() - 50, this.arrowDown.width, this.arrowDown.height);
                 }
@@ -363,6 +498,7 @@ export class BoingBoing implements InputEventListener {
 
         let deadOffset = 0;
 
+        // if the game has started render the count down clock.
         if (this.game.startAt !== -1) {
             let remaining = (roundTime - (Rune.gameTime() - this.game.startAt));
             remaining = Math.min(roundTime, remaining);
@@ -377,6 +513,8 @@ export class BoingBoing implements InputEventListener {
             drawText(screenWidth() - 5 - stringWidth(timeStr, 30), 30, timeStr, 30, "white");
         }
 
+        // render any players that have already died as mini-sprites in the top left of the
+        // screen. 
         for (const jumper of this.game.jumpers) {
             if (jumper.dead) {
                 const jumperSprite = this.jumpers[jumper.type];
@@ -388,12 +526,16 @@ export class BoingBoing implements InputEventListener {
                 deadOffset += width / 2;
             }
         }
+
+        // if we haven't joined yet then render the character selection screen
+        // and the score board
         if (this.waitingToJoin()) {
             fillRect(0, 0, screenWidth(), screenHeight(), "rgba(0,0,0,0.5)")
             // draw the level select if we're not in game
             const boxWidth = Math.floor(screenWidth() / 4);
             const boxHeight = Math.floor((boxWidth / this.box.width) * this.box.height);
 
+            // render our characters as a grid to be selected from
             for (let i = 0; i < 9; i++) {
                 const x = i % 3;
                 const y = Math.floor(i / 3);
@@ -408,10 +550,12 @@ export class BoingBoing implements InputEventListener {
                     50 + Math.floor((y + 0.02) * boxHeight), frame.width * selectScale, frame.height * selectScale);
             }
 
+            // render the big orange start button
             const startWidth = Math.floor(screenWidth() / 3);
             const startHeight = Math.floor((startWidth / this.startButton.width) * this.startButton.height);
             drawImage(this.startButton, Math.floor((screenWidth() - startWidth) / 2), screenHeight() - (startHeight * 1.2) - 110, startWidth, startHeight);
 
+            // render the score board 
             const cols = ["rgba(0,0,0,0.7)", "rgba(10,10,10,0.7)"];
             const lines: [{ avatar: HTMLImageElement | null, name: string | null, wins: string, best: string }] = [
                 { avatar: null, name: null, wins: "Wins", best: "Best" },
@@ -450,6 +594,8 @@ export class BoingBoing implements InputEventListener {
             }
 
         } else if (!this.game.jumping) {
+            // if the game is about to start then render the 3/2/1 countdown
+            // int he middle of the screen based on how much time there is remaining
             const tilStart = Math.ceil((this.game.startAt - Rune.gameTime()) / 1000);
             if (tilStart <= 5 && tilStart > 0) {
                 const secs = "" + tilStart;
@@ -458,6 +604,8 @@ export class BoingBoing implements InputEventListener {
             }
             this.drawInstructions();
         } else if (gameOver(this.game) && this.players) {
+            // render the winning message if the game is over and we 
+            // have player details
             const winner = [...this.game.jumpers].sort((a, b) => b.highest - a.highest)[0];
             const name = this.players[winner.id].displayName;
             const lines = [];
@@ -476,6 +624,9 @@ export class BoingBoing implements InputEventListener {
         }
     }
 
+    // using the animation ticker we'll make the instructions hands appear
+    // in four states, left up/down and right up/down and repeat 
+    // to show the player how to play
     drawInstructions(): void {
         this.instructionTimer++;
         const frame = Math.floor(this.instructionTimer / 30) % 8;
@@ -514,6 +665,8 @@ export class BoingBoing implements InputEventListener {
 
     mouseDown(x: number, y: number): void {
         if (this.waitingToJoin()) {
+            // if we're in the character select screen then
+            // consider if they've clicked on a character or the start button
             const boxWidth = Math.floor(screenWidth() / 4);
             const boxHeight = Math.floor((boxWidth / this.box.width) * this.box.height);
             const startWidth = Math.floor(screenWidth() / 3);
@@ -531,6 +684,7 @@ export class BoingBoing implements InputEventListener {
                 }
             }
         } else {
+            // otherwise consider the press for movement
             if (!gameOver(this.game)) {
                 this.considerTouch(x);
             }
@@ -538,17 +692,23 @@ export class BoingBoing implements InputEventListener {
     }
 
     mouseDrag(x: number): void {
+        // if we're in game consider the movement still pressing the screen
+        // for movement
         if (!gameOver(this.game) && !this.waitingToJoin()) {
             this.considerTouch(x);
         }
     }
 
     mouseUp(): void {
+        // clear the controls
         this.controls.left = false;
         this.controls.right = false;
     }
 
     considerTouch(x: number): void {
+        // consider any touches on the left hand side of the screen
+        // to be moving left and right hand side of the screen to be 
+        // moving right
         if (x < screenWidth() / 2) {
             this.controls.left = true;
             this.controls.right = false;
@@ -559,6 +719,8 @@ export class BoingBoing implements InputEventListener {
     }
 
     keyDown(key: string): void {
+        // keyboard controls are useful for
+        // debugging play
         if (key === "ArrowLeft") {
             this.controls.left = true;
         }
@@ -568,6 +730,8 @@ export class BoingBoing implements InputEventListener {
     }
 
     keyUp(key: string): void {
+        // keyboard controls are useful for
+        // debugging play
         if (key === "ArrowLeft") {
             this.controls.left = false;
         }
@@ -575,5 +739,4 @@ export class BoingBoing implements InputEventListener {
             this.controls.right = false;
         }
     }
-
 }
