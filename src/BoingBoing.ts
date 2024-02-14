@@ -1,5 +1,5 @@
-import { InterpolatorLatency, Players } from "rune-games-sdk";
-import { Controls, GameEventType, GameState, GameUpdate, gameOver, platformWidth, roundTime } from "./logic";
+import { Interpolator, InterpolatorLatency, Players } from "rune-games-sdk";
+import { Controls, GameEventType, GameState, GameUpdate, gameOver, moveSpeed, platformWidth, roundTime } from "./logic";
 import { InputEventListener, drawImage, drawText, fillCircle, fillRect, loadImage, outlineText, popState, pushState, registerInputEventListener, scale, screenHeight, screenWidth, stringWidth, translate, updateGraphics } from "./renderer/graphics";
 import { Sound, loadSound, playSound } from "./renderer/sound";
 
@@ -136,7 +136,7 @@ export class BoingBoing implements InputEventListener {
     avatarImages: Record<string, HTMLImageElement> = {};
     // interpolators keyed on player ID used to smooth out the 
     // movement of remote players 
-    interpolators: Record<string, InterpolatorLatency<number[]>> = {};
+    interpolators: Record<string, Interpolator<number[]>> = {};
     // The time in ms that the last jump sound effect was played, since you
     // can sometimes hit platforms very close together we don't want the 
     // sound effect being spammed - it hurts your ears!
@@ -230,20 +230,18 @@ export class BoingBoing implements InputEventListener {
         // while we wait for network updates
         if (update.futureGame) {
             for (const jumper of this.game.jumpers) {
-                // we don't use an interpolator for the local state since
-                // we're pretty sure that one will be smooth moving
-                if (jumper.id !== this.localPlayerId) {
-                    if (!this.interpolators[jumper.id]) {
-                        this.interpolators[jumper.id] = Rune.interpolatorLatency<number[]>({ maxSpeed: 0.05 });
-                    }
+                if (!this.interpolators[jumper.id]) {
+                    this.interpolators[jumper.id] = jumper.id !== this.localPlayerId ? 
+                        Rune.interpolatorLatency<number[]>({ maxSpeed: moveSpeed }) :
+                        Rune.interpolator<number[]>();
+                }
 
-                    const futureJumper = update.futureGame.jumpers.find(j => j.id === jumper.id);
-                    if (futureJumper) {
-                        this.interpolators[jumper.id].update({
-                            game: [jumper.x, jumper.y],
-                            futureGame: [futureJumper.x, futureJumper.y]
-                        })
-                    }
+                const futureJumper = update.futureGame.jumpers.find(j => j.id === jumper.id);
+                if (futureJumper) {
+                    this.interpolators[jumper.id].update({
+                        game: [jumper.x, jumper.y],
+                        futureGame: [futureJumper.x, futureJumper.y]
+                    })
                 }
             }
         }
@@ -313,8 +311,10 @@ export class BoingBoing implements InputEventListener {
         // but its not quite that the simple, we actually want to scroll the view so we're looking at the highest
         // point that the player has reached, this is how they can fall of the screen
         const localPlayer = this.game.jumpers.find(j => j.id === this.localPlayerId);
-        const scroll = Math.floor(Math.max(0, ((localPlayer?.highest ?? 0) - 0.5)) * screenHeight());
-        const highest = localPlayer?.highest ?? 0;
+        const localPlayerY = localPlayer ? this.interpolators[localPlayer.id] ? this.interpolators[localPlayer.id].getPosition()[1] : localPlayer.y : 0;
+        const highest = Math.max(localPlayer?.highest ?? 0, localPlayerY);
+
+        const scroll = Math.floor(Math.max(0, (highest - 0.5)) * screenHeight());
 
         // background rendering, we just use two copies of each layer and render them on top of 
         // each other offsetting by a factor of the player's view position. The factor changes per layer
@@ -479,17 +479,17 @@ export class BoingBoing implements InputEventListener {
             const jumperX = this.interpolators[jumper.id] ? this.interpolators[jumper.id].getPosition()[0] : jumper.x;
             const jumperY = this.interpolators[jumper.id] ? this.interpolators[jumper.id].getPosition()[1] : jumper.y;
 
-            const x = Math.floor(jumperX * screenWidth()) - Math.floor(width / 2);
+            const x = Math.floor(jumperX * screenWidth());
             if (localPlayer && (jumperY < localPlayer.highest - 0.5 || jumperY > localPlayer.highest + 0.5)) {
                 // offscreen so lets draw a marker
                 if (localPlayer.highest < jumperY) {
                     if (this.players) {
-                        outlineText(x - Math.floor(stringWidth(this.players[jumper.id].displayName, 16) / 2), 70, this.players[localPlayer.id].displayName, 16, "white", "black", 2);
+                        outlineText(x - Math.floor(stringWidth(this.players[jumper.id].displayName, 16) / 2), 70, this.players[jumper.id].displayName, 16, "white", "black", 2);
                     }
                     drawImage(this.arrowUp, x - 16, 32, this.arrowUp.width, this.arrowUp.height);
                 } else {
                     if (this.players) {
-                        outlineText(x - Math.floor(stringWidth(this.players[jumper.id].displayName, 16) / 2), screenHeight() - 57, this.players[localPlayer.id].displayName, 16, "white", "black", 2);
+                        outlineText(x - Math.floor(stringWidth(this.players[jumper.id].displayName, 16) / 2), screenHeight() - 57, this.players[jumper.id].displayName, 16, "white", "black", 2);
                     }
                     drawImage(this.arrowDown, x - 16, screenHeight() - 50, this.arrowDown.width, this.arrowDown.height);
                 }

@@ -16,7 +16,7 @@ const gravity = -0.0015;
 // the distance is from the middle of the player
 const playerHalfWidth = 0.03;
 // The speed the players will move horizontally
-const moveSpeed = 0.02;
+export const moveSpeed = 0.02;
 
 // Game events that can occur in the game loop and the renderer 
 // wants to respond to
