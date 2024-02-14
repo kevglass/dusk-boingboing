@@ -11,17 +11,22 @@ let mouseDown = false;
 ctx.imageSmoothingEnabled = false;
 canvas.style.imageRendering = "pixelated";
 
-let resourcesPending = 0;
+let resourcesRequested = 0;
+let resourcesLoaded = 0;
+
+export function getResourceLoadingStatus(): string {
+    return resourcesLoaded + "/" + resourcesRequested;
+}
 
 export function resourceRequested(url: string): void {
-    resourcesPending++;
+    resourcesRequested++;
     console.log("Loading: ", url);
 }
 
 export function resourceLoaded(url: string): void {
-    resourcesPending--;
+    resourcesLoaded++;
     console.log("Loaded: ", url);
-    if (resourcesPending <= 0) {
+    if (resourcesLoaded >= resourcesRequested) {
         eventListener?.resourcesLoaded();
     }
 }

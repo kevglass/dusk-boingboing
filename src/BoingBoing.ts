@@ -1,6 +1,6 @@
 import { Interpolator, Players } from "rune-games-sdk";
 import { Controls, GameEventType, GameState, GameUpdate, gameOver, moveSpeed, platformWidth, roundTime } from "./logic";
-import { InputEventListener, drawImage, drawText, fillCircle, fillRect, loadImage, outlineText, popState, pushState, registerInputEventListener, scale, screenHeight, screenWidth, stringWidth, translate, updateGraphics } from "./renderer/graphics";
+import { InputEventListener, drawImage, drawText, fillCircle, fillRect, getResourceLoadingStatus, loadImage, outlineText, popState, pushState, registerInputEventListener, scale, screenHeight, screenWidth, stringWidth, translate, updateGraphics } from "./renderer/graphics";
 import { Sound, loadSound, playSound } from "./renderer/sound";
 
 const TENTH_OF_A_SECOND_IN_MS = 100;
@@ -310,6 +310,7 @@ export class BoingBoing implements InputEventListener {
             const message = "Loading...";
             this.anim += 0.05;
             drawText(Math.floor((screenWidth() - stringWidth(message, 20))/2), 100 + (Math.sin(this.anim) * 20), message, 20, "white");
+            drawText(Math.floor((screenWidth() - stringWidth(getResourceLoadingStatus(), 20))/2), 160, getResourceLoadingStatus(), 20, "white");
             return;
         }
 
@@ -554,7 +555,7 @@ export class BoingBoing implements InputEventListener {
 
             // render the big orange start button
             const startWidth = Math.floor(screenWidth() / 3);
-            const startHeight = Math.floor((startWidth / this.startButton.width) * this.startButton.height);
+            const startHeight =  Math.floor((startWidth / this.startButton.width) * this.startButton.height);
             drawImage(this.startButton, Math.floor((screenWidth() - startWidth) / 2), screenHeight() - (startHeight * 1.2) - 110, startWidth, startHeight);
 
             // render the score board 
