@@ -195,9 +195,12 @@ export class BoingBoing implements InputEventListener {
                 this.enemySprites["bat"].push(loadImage(ASSETS["./assets/Enemies/Bat/"+i+".png"]));
                 this.enemySprites["bird"].push(loadImage(ASSETS["./assets/Enemies/Bird/"+i+".png"]));
             }
-            this.assetsLoaded = true;
         })
 
+    }
+
+    resourcesLoaded(): void {
+        this.assetsLoaded = true;
     }
 
     // start the game
@@ -563,7 +566,7 @@ export class BoingBoing implements InputEventListener {
             if (this.players) {
                 for (const id of Object.keys(this.players)) {
                     if (!this.avatarImages[id]) {
-                        this.avatarImages[id] = loadImage(this.players[id].avatarUrl);
+                        this.avatarImages[id] = loadImage(this.players[id].avatarUrl, false);
                     }
                     lines.push({
                         avatar: this.avatarImages[id],

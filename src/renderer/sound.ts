@@ -1,3 +1,5 @@
+import { resourceLoaded, resourceRequested } from "./graphics";
+
 const audioContext: AudioContext = new AudioContext();
 audioContext.resume();
 
@@ -10,6 +12,8 @@ export interface Sound {
 // load a sound from the URL given. This will also attempt to 
 // buffer the loaded data into an AudioBuffer
 export function loadSound(url: string): Sound {
+    resourceRequested(url);
+
     const result: Sound = {};
 
     const req = new XMLHttpRequest();
@@ -17,6 +21,7 @@ export function loadSound(url: string): Sound {
     req.responseType = "arraybuffer";
 
     req.onload = () => {
+        resourceLoaded(url);
         const arrayBuffer = req.response;
         if (arrayBuffer) {
             result.data = arrayBuffer;

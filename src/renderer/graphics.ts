@@ -11,6 +11,20 @@ let mouseDown = false;
 ctx.imageSmoothingEnabled = false;
 canvas.style.imageRendering = "pixelated";
 
+let resourcesPending = 0;
+
+export function resourceRequested(url: string): void {
+    resourcesPending++;
+    console.log("Loading: ", url);
+}
+
+export function resourceLoaded(url: string): void {
+    resourcesPending--;
+    console.log("Loaded: ", url);
+    if (resourcesPending <= 0) {
+        eventListener?.resourcesLoaded();
+    }
+}
 // a tile set cuts an imag into pieces to be used as sprites
 export interface TileSet {
     image: HTMLImageElement;
@@ -25,6 +39,7 @@ export interface InputEventListener {
     mouseUp(x: number, y: number, index: number): void;
     keyDown(key: string): void;
     keyUp(key: string): void;
+    resourcesLoaded(): void;
 }
 
 // register an event listener for mouse/touch events
@@ -122,11 +137,19 @@ export function screenHeight(): number {
     return canvas.height;
 }
 
-export function loadImage(url: string): HTMLImageElement {
+export function loadImage(url: string, track = true): HTMLImageElement {
+    if (track) {
+        resourceRequested(url);
+    }
     const image = new Image();
-    image.src = url
+    image.src = url;
     image.onerror = () => {
         console.log("Failed to load: " + url);
+    }
+    image.onload =() => {
+        if (track) {
+            resourceLoaded(url);
+        }
     }
 
     return image;
@@ -134,8 +157,16 @@ export function loadImage(url: string): HTMLImageElement {
 
 // load an image and store it with tileset information
 export function loadTileSet(url: string, tw: number, th: number): TileSet {
+    resourceRequested(url);
+
     const image = new Image();
     image.src = url;
+    image.onerror = () => {
+        console.log("Failed to load: " + url);
+    }
+    image.onload =() => {
+        resourceLoaded(url);
+    }
 
     return { image, tileWidth: tw, tileHeight: th };
 }
