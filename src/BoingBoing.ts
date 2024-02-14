@@ -1,6 +1,6 @@
 import { InterpolatorLatency, Players } from "rune-games-sdk";
 import { Controls, GameEventType, GameState, GameUpdate, gameOver, platformWidth, roundTime } from "./logic";
-import { InputEventListener, drawImage, drawText, fillCircle, fillRect, loadImage, popState, pushState, registerInputEventListener, screenHeight, screenWidth, setAlpha, stringWidth, translate, updateGraphics } from "./renderer/graphics";
+import { InputEventListener, drawImage, drawText, fillCircle, fillRect, loadImage, popState, pushState, registerInputEventListener, scale, screenHeight, screenWidth, setAlpha, stringWidth, translate, updateGraphics } from "./renderer/graphics";
 import { Sound, loadSound, playSound } from "./renderer/sound";
 
 const ASSETS_IMPORTS = import.meta.glob("./assets/**/*", {
@@ -27,6 +27,8 @@ interface JumperSprite {
     die: HTMLImageElement;
 }
 
+type EnemySprite = HTMLImageElement[];
+
 export class BoingBoing implements InputEventListener {
     jumperHeights: number[] = [0.85, 0.87, 0.87, 0.9, 0.92, 0.92, 0.8, 0.87, 0.8];
 
@@ -41,11 +43,14 @@ export class BoingBoing implements InputEventListener {
     handOff!: HTMLImageElement;
     handOn!: HTMLImageElement;
     spikes!: HTMLImageElement;
+    spring!: HTMLImageElement;
+    enemySprites: Record<string, EnemySprite> = {};
 
     sfxBoing!: Sound;
     sfxClick!: Sound;
     sfxFanfare!: Sound;
     sfxUrgh!: Sound;
+    sfxJump!: Sound;
 
     assetsLoaded = false;
 
@@ -69,7 +74,7 @@ export class BoingBoing implements InputEventListener {
 
     avatarImages: Record<string, HTMLImageElement> = {};
     interpolators: Record<string, InterpolatorLatency<number[]>> = {};
-    lastBoingSfx = 0;
+    lastJumpSfx = 0;
 
     constructor() {
         loadAll().then(() => {
@@ -77,6 +82,7 @@ export class BoingBoing implements InputEventListener {
             this.sfxClick = loadSound(ASSETS["./assets/click.mp3"]);
             this.sfxUrgh = loadSound(ASSETS["./assets/lose.mp3"]);
             this.sfxFanfare = loadSound(ASSETS["./assets/win.mp3"]);
+            this.sfxJump = loadSound(ASSETS["./assets/jump.mp3"]);
 
             this.box = loadImage(ASSETS["./assets/Ui/Box04.png"]);
             this.boxGrey = loadImage(ASSETS["./assets/Ui/Box04Grey.png"]);
@@ -85,6 +91,7 @@ export class BoingBoing implements InputEventListener {
             this.handOn = loadImage(ASSETS["./assets/Hand/Click.png"]);
             this.handOff = loadImage(ASSETS["./assets/Hand/Clicked.png"]);
             this.spikes = loadImage(ASSETS["./assets/OtherAssets/obstacle.png"]);
+            this.spring = loadImage(ASSETS["./assets/spring.png"]);
 
             const jumperIds = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
             for (const id of jumperIds) {
@@ -105,6 +112,13 @@ export class BoingBoing implements InputEventListener {
 
                 this.platforms[this.platforms.length] = loadImage(ASSETS["./assets/OtherAssets/Platformer" + id + ".png"]);
                 this.platformsBroken[this.platformsBroken.length] = loadImage(ASSETS["./assets/OtherAssets/Platformer" + id + "-broken.png"]);
+            }
+
+            this.enemySprites["bat"] = [];
+            this.enemySprites["bird"] = [];
+            for (let i=1;i<5;i++) {
+                this.enemySprites["bat"].push(loadImage(ASSETS["./assets/Enemies/Bat/"+i+".png"]));
+                this.enemySprites["bird"].push(loadImage(ASSETS["./assets/Enemies/Bird/"+i+".png"]));
             }
             this.assetsLoaded = true;
         })
@@ -154,9 +168,9 @@ export class BoingBoing implements InputEventListener {
         }
         for (const event of this.game.events) {
             if (event.type === GameEventType.BOUNCE && event.playerId === this.localPlayerId) {
-                if (Date.now() - this.lastBoingSfx > 200) {
-                    this.lastBoingSfx = Date.now();
-                    playSound(this.sfxBoing);
+                if (Date.now() - this.lastJumpSfx > 200) {
+                    this.lastJumpSfx = Date.now();
+                    playSound(this.sfxJump);
                 }
             }
             if (event.type === GameEventType.WIN) {
@@ -165,6 +179,9 @@ export class BoingBoing implements InputEventListener {
             }
             if (event.type === GameEventType.DIE && event.playerId === this.localPlayerId) {
                 playSound(this.sfxUrgh);
+            }
+            if (event.type === GameEventType.SPRING && event.playerId === this.localPlayerId) {
+                playSound(this.sfxBoing);
             }
         }
         // we have to schedule the potential change to controls
@@ -220,8 +237,8 @@ export class BoingBoing implements InputEventListener {
         pushState();
         translate(0, scroll);
         const platformSpriteWidth = Math.floor(screenWidth() / 6);
-        const scale = (platformSpriteWidth / this.platforms[0].width);
-        const platformHeight = scale * this.platforms[0].height;
+        const generalScale = (platformSpriteWidth / this.platforms[0].width);
+        const platformHeight = generalScale * this.platforms[0].height;
 
         for (const platform of this.game.platforms) {
             if (!platform) {
@@ -242,15 +259,31 @@ export class BoingBoing implements InputEventListener {
                 const spikesHeight = platformHeight / 2;
                 drawImage(this.spikes, Math.floor(platform.x * screenWidth()), screenHeight() - Math.floor(platform.y * screenHeight()) - (spikesHeight * 0.8), platformSpriteWidth * widthScale, spikesHeight);
             }
+            if (platform.spring) {
+                const widthScale = platform.width / platformWidth;
+                const springHeight = platformHeight / 2;
+                drawImage(this.spring, Math.floor(platform.x * screenWidth()) + (platformSpriteWidth * widthScale / 2) - (this.spring.width * widthScale / 2), 
+                          screenHeight() - Math.floor(platform.y * screenHeight()) - (springHeight * 0.8), 
+                            this.spring.width * widthScale, springHeight);
+            }
         }
 
-        for (const jumper of this.game.jumpers) {
-            if (jumper.dead) {
-                continue;
+        for (const enemy of this.game.enemies) {
+            const sprite = this.enemySprites[enemy.type];
+            pushState();
+            translate(enemy.x * screenWidth(), screenHeight() - enemy.y * screenHeight());
+            const width = sprite[0].width * generalScale * 0.65;
+            const height = sprite[0].height * generalScale * 0.65;
+            if (enemy.dir === "left") {
+                scale(-1,1);
             }
+            drawImage(sprite[Math.floor(this.anim * 2) % 4], -Math.floor(width / 2), -Math.floor(height / 2), width, height);
+            popState();
+        }
+        for (const jumper of this.game.jumpers) {
             const jumperSprite = this.jumpers[jumper.type];
-            const frame = jumper.vy > 0 && this.game.jumping ? jumperSprite.jump : jumperSprite.idle;
-            const jumperScale = scale * 0.5;
+            const frame = jumper.dead ? jumperSprite.die : jumper.vy > 0 && this.game.jumping ? jumperSprite.jump : jumperSprite.idle;
+            const jumperScale = generalScale * 0.5;
             const width = Math.floor(frame.width * jumperScale);
             const height = Math.floor(frame.height * jumperScale);
 
@@ -308,7 +341,7 @@ export class BoingBoing implements InputEventListener {
             if (jumper.dead) {
                 const jumperSprite = this.jumpers[jumper.type];
                 const frame = jumperSprite.die;
-                const jumperScale = scale * 0.5;
+                const jumperScale = generalScale * 0.5;
                 const width = Math.floor(frame.width * jumperScale);
                 const height = Math.floor(frame.height * jumperScale);
                 drawImage(frame, deadOffset, 0, Math.floor(width / 2), Math.floor(height / 2));
@@ -330,7 +363,7 @@ export class BoingBoing implements InputEventListener {
                     drawImage(this.box, Math.floor(screenWidth() * 0.125) + (x * boxWidth), 50 + (y * boxHeight), boxWidth - 5, boxHeight - 5);
                 }
                 const frame = this.jumpers[i].idle;
-                const selectScale = scale * 0.5;
+                const selectScale = generalScale * 0.5;
                 drawImage(frame, Math.floor(screenWidth() * 0.12) + (x * boxWidth) + Math.floor(boxWidth / 2) - Math.floor(frame.width * selectScale * 0.5),
                     50 + Math.floor((y + 0.02) * boxHeight), frame.width * selectScale, frame.height * selectScale);
             }

@@ -12,6 +12,7 @@ export enum GameEventType {
   DIE = "die",
   WIN = "win",
   BOUNCE = "bounce",
+  SPRING = "spring",
 }
 
 export interface GameEvent {
@@ -37,17 +38,29 @@ export interface Jumper {
   dead: boolean;
 }
 
+export interface Enemy {
+  x: number;
+  y: number;
+  dir: "left" | "right";
+  speed: number;
+  type: "bird" | "bat"
+}
+
 export interface Platform {
   x: number; // as a factor of screen width
   y: number; // as a factor of screen height
   width: number;
   spikes: boolean;
   faller: boolean;
+  falling: boolean;
+  vy: number;
+  spring: boolean;
 }
 
 export interface GameState {
   jumpers: Jumper[],
   platforms: Platform[],
+  enemies: Enemy[],
   startAt: number,
   jumping: boolean,
   gameRestartTime: number,
@@ -80,15 +93,16 @@ declare global {
 }
 
 function generatePlatform(state: GameState, i: number, requiredPlatform: boolean): Platform {
-  const x = requiredPlatform 
-        ? 0.5 + (Math.random() * platformWidth * 2) - platformWidth
-        : Math.random() * (1 - platformWidth);
+  const x = requiredPlatform
+    ? 0.5 + (Math.random() * platformWidth * 2) - platformWidth
+    : Math.random() * (1 - platformWidth);
 
   const spikes = !requiredPlatform && Math.random() < (0.1 + (i / 3000));
   const faller = !requiredPlatform && !spikes && (Math.random() < (0.1 + (i / 3000)));
+  const spring = !faller && !spikes && (Math.random() < (0.08 + (i / 5000)));
 
   state.platforms[i] = {
-    x, y: i * rowHeight, width: platformWidth, spikes, faller
+    x, y: i * rowHeight, width: platformWidth, spikes, faller, falling: false, vy: 0, spring
   }
 
   return state.platforms[i];
@@ -108,6 +122,7 @@ export function gameOver(state: GameState | undefined): boolean {
 function startGame(state: GameState): void {
   state.jumpers = [];
   state.platforms = [];
+  state.enemies = [];
 
   state.theme = Math.floor(Math.random() * 5);
   state.platforms[0] = {
@@ -115,7 +130,10 @@ function startGame(state: GameState): void {
     y: rowHeight,
     width: 2,
     spikes: false,
-    faller: false
+    faller: false,
+    falling: false,
+    vy: 0,
+    spring: false
   }
 
   // level generation follows the rules
@@ -137,6 +155,19 @@ function startGame(state: GameState): void {
     }
   }
 
+  let nextEnemyY = 1 + (Math.random() * 2);
+  for (let i = 0; i < 10; i++) {
+    state.enemies.push({
+      x: (Math.random() * 0.5) + 0.25,
+      y: nextEnemyY,
+      type: "bird",
+      speed: 0.002 + (Math.random() * 0.005),
+      dir: Math.random() > 0.5 ? "left" : "right"
+    });
+
+    nextEnemyY += 1 + (Math.random() * 3);
+  }
+
   state.startAt = -1;
   state.jumping = false;
   state.gameRestartTime = -1;
@@ -149,6 +180,7 @@ Rune.initLogic({
     const initialState: GameState = {
       jumpers: [],
       platforms: [],
+      enemies: [],
       startAt: -1,
       jumping: false,
       gameRestartTime: -1,
@@ -180,7 +212,7 @@ Rune.initLogic({
       if (game.gameRestartTime === -1 && gameOver(game)) {
         game.gameRestartTime = Rune.gameTime() + 3000;
         game.events.push({ type: GameEventType.WIN });
-        const winner = [...game.jumpers].sort((a,b) => b.highest - a.highest)[0];
+        const winner = [...game.jumpers].sort((a, b) => b.highest - a.highest)[0];
         if (game.scores[winner.id] === undefined) {
           game.scores[winner.id] = 0;
         }
@@ -202,59 +234,100 @@ Rune.initLogic({
       if (game.startAt > 0 && Rune.gameTime() > game.startAt) {
         // start the game
         game.jumping = true;
-        
+
         // everyone bounces at the start
         for (const playerId of context.allPlayerIds) {
           game.events.push({ type: GameEventType.BOUNCE, playerId });
         }
       }
     } else {
-      if (gameOver(game)) {
-        return;
+      for (const platform of game.platforms) {
+        if (platform && platform.falling) {
+          platform.vy += gravity;
+          platform.y += platform.vy;
+        }
+      }
+
+      for (const enemy of game.enemies) {
+        if (enemy.dir === "left") {
+          enemy.x -= enemy.speed;
+          if (enemy.x < 0) {
+            enemy.dir = "right";
+          }
+        } else {
+          enemy.x += enemy.speed;
+          if (enemy.x > 1) {
+            enemy.dir = "left";
+          }
+        }
       }
       for (const jumper of game.jumpers) {
-        if (jumper.dead) {
-          continue;
-        }
-
         jumper.vy += gravity;
         const steps = 10;
         for (let i = 0; i < steps; i++) {
           jumper.y += jumper.vy / steps;
+
+          // can't land of platforms if you're dead, just fall off screen
+          if (jumper.dead) {
+            continue;
+          }
+          if (gameOver(game)) {
+            continue;
+          }
 
           // if we're falling down, then look for a platform
           // to land on
           if (jumper.vy < 0) {
             const index = Math.floor(jumper.y / rowHeight);
             const platform = game.platforms[index];
-            if (platform) {
+            if (platform && !platform.falling) {
               if (jumper.x > platform.x - playerHalfWidth && jumper.x < platform.x + platform.width + playerHalfWidth) {
                 // landed on the platform
+                if (platform.spikes) {
+                  jumper.dead = true;
+                  game.events.push({ type: GameEventType.DIE, playerId: jumper.id });
+                }
+                if (platform.faller) {
+                  platform.falling = true;
+                }
                 jumper.y = platform.y;
-                jumper.vy = defaultJumpPower;
-                game.events.push({ type: GameEventType.BOUNCE, playerId: jumper.id });
+                jumper.vy = platform.spring ? defaultJumpPower * 1.5 : defaultJumpPower;
+                if (!platform.spikes) {
+                  if (platform.spring) {
+                    game.events.push({ type: GameEventType.SPRING, playerId: jumper.id });
+                  } else {
+                    game.events.push({ type: GameEventType.BOUNCE, playerId: jumper.id });
+                  }
+                }
                 break;
               }
             }
           }
         }
 
-        if (jumper.right && jumper.x < 1 - playerHalfWidth) {
-          jumper.x += moveSpeed;
-        }
-        if (jumper.left && jumper.x > playerHalfWidth) {
-          jumper.x -= moveSpeed;
-        }
+        if (!jumper.dead) {
+          if (game.enemies.find(e => Math.abs(e.x - jumper.x) < 0.05 && Math.abs(e.y - jumper.y) < 0.05)) {
+            // collide with enemy
+            jumper.dead = true;
+            game.events.push({ type: GameEventType.DIE, playerId: jumper.id });
+          }
+          if (jumper.right && jumper.x < 1 - playerHalfWidth) {
+            jumper.x += moveSpeed;
+          }
+          if (jumper.left && jumper.x > playerHalfWidth) {
+            jumper.x -= moveSpeed;
+          }
 
-        jumper.highest = Math.max(jumper.highest, jumper.y);
-        if (!game.best[jumper.id] || jumper.highest > game.best[jumper.id]) {
-          game.best[jumper.id] = jumper.highest;
-        }
+          jumper.highest = Math.max(jumper.highest, jumper.y);
+          if (!game.best[jumper.id] || jumper.highest > game.best[jumper.id]) {
+            game.best[jumper.id] = jumper.highest;
+          }
 
-        if (jumper.y < jumper.highest - 0.5) {
-          // fell off screen
-          jumper.dead = true;
-          game.events.push({ type: GameEventType.DIE, playerId: jumper.id });
+          if (jumper.y < jumper.highest - 0.5 && !jumper.dead) {
+            // fell off screen
+            jumper.dead = true;
+            game.events.push({ type: GameEventType.DIE, playerId: jumper.id });
+          }
         }
       }
     }
