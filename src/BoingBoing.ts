@@ -1,4 +1,4 @@
-import { Interpolator, InterpolatorLatency, Players } from "rune-games-sdk";
+import { Interpolator, Players } from "rune-games-sdk";
 import { Controls, GameEventType, GameState, GameUpdate, gameOver, moveSpeed, platformWidth, roundTime } from "./logic";
 import { InputEventListener, drawImage, drawText, fillCircle, fillRect, loadImage, outlineText, popState, pushState, registerInputEventListener, scale, screenHeight, screenWidth, stringWidth, translate, updateGraphics } from "./renderer/graphics";
 import { Sound, loadSound, playSound } from "./renderer/sound";
@@ -471,10 +471,6 @@ export class BoingBoing implements InputEventListener {
             if (jumper.dead) {
                 continue;
             }
-            const jumperSprite = this.jumpers[jumper.type];
-            const frame = jumper.dead ? jumperSprite.die : jumper.vy > 0 && this.game.jumping ? jumperSprite.jump : jumperSprite.idle;
-            const jumperScale = generalScale * 0.5;
-            const width = Math.floor(frame.width * jumperScale);
 
             const jumperX = this.interpolators[jumper.id] ? this.interpolators[jumper.id].getPosition()[0] : jumper.x;
             const jumperY = this.interpolators[jumper.id] ? this.interpolators[jumper.id].getPosition()[1] : jumper.y;
