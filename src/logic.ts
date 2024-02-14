@@ -29,6 +29,8 @@ export enum GameEventType {
   BOUNCE = "bounce",
   // A player hit a spring
   SPRING = "spring",
+  // New game starts
+  START_NEW_GAME = "game",
 }
 
 // Game events fired from the game logic loop
@@ -326,6 +328,7 @@ Rune.initLogic({
       if (game.jumpers.length === context.allPlayerIds.length) {
         if (game.startAt === -1) {
           game.startAt = Rune.gameTime() + (1000 * 3);
+          game.events.push({ type: GameEventType.START_NEW_GAME });
         }
       }
 

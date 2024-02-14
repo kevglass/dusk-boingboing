@@ -244,7 +244,7 @@ export class BoingBoing implements InputEventListener {
         // update our latency based interpolators (that Rune handily
         // gives us) so that our remote players will move smoothly
         // while we wait for network updates
-        if (update.futureGame) {
+        if (update.futureGame && !gameOver(this.game)) {
             for (const jumper of this.game.jumpers) {
                 if (!this.interpolators[jumper.id]) {
                     this.interpolators[jumper.id] = jumper.id !== this.localPlayerId ?
@@ -277,6 +277,9 @@ export class BoingBoing implements InputEventListener {
             // The game is over, celebrate!
             if (event.type === GameEventType.WIN) {
                 playSound(this.sfxFanfare);
+                this.interpolators = {};
+            }
+            if (event.type === GameEventType.START_NEW_GAME) {
                 this.interpolators = {};
             }
             // The local player died, play the death sound effect
@@ -332,7 +335,7 @@ export class BoingBoing implements InputEventListener {
         // point that the player has reached, this is how they can fall of the screen
         const localPlayer = this.game.jumpers.find(j => j.id === this.localPlayerId);
         const localPlayerY = localPlayer ? this.interpolators[localPlayer.id] ? this.interpolators[localPlayer.id].getPosition()[1] : localPlayer.y : 0;
-        const highest = Math.max(localPlayer?.highest ?? 0, localPlayerY);
+        const highest = localPlayer?.dead ? Math.max(0, localPlayerY) : Math.max(localPlayer?.highest ?? 0, localPlayerY);
 
         const scroll = Math.floor(Math.max(0, (highest - 0.5)) * screenHeight());
 
@@ -445,7 +448,7 @@ export class BoingBoing implements InputEventListener {
             // an arrow later, otherwise draw the character frame
             const x = Math.floor(jumperX * screenWidth()) - Math.floor(width / 2);
             const y = screenHeight() - (Math.floor(jumperY * screenHeight()) + (height * this.jumperHeights[jumper.type]));
-            if (localPlayer && (jumperY < localPlayer.highest - 0.5 || jumperY > localPlayer.highest + 0.5)) {
+            if (!localPlayer?.dead && localPlayer && (jumperY < localPlayer.highest - 0.5 || jumperY > localPlayer.highest + 0.5)) {
                 // offscreen so lets draw a marker
             } else {
                 drawImage(frame, x, y, width, height);
@@ -487,27 +490,29 @@ export class BoingBoing implements InputEventListener {
         // If the jumpers are offscreen we want to render an arrow pointing to them. We want to 
         // do this in screen space rather than in game space though so a second block here
         // outside of the push/pop state.
-        for (const jumper of this.game.jumpers) {
-            if (jumper.dead) {
-                continue;
-            }
+        if (!localPlayer?.dead) {
+            for (const jumper of this.game.jumpers) {
+                if (jumper.dead) {
+                    continue;
+                }
 
-            const jumperX = this.interpolators[jumper.id] ? this.interpolators[jumper.id].getPosition()[0] : jumper.x;
-            const jumperY = this.interpolators[jumper.id] ? this.interpolators[jumper.id].getPosition()[1] : jumper.y;
+                const jumperX = this.interpolators[jumper.id] ? this.interpolators[jumper.id].getPosition()[0] : jumper.x;
+                const jumperY = this.interpolators[jumper.id] ? this.interpolators[jumper.id].getPosition()[1] : jumper.y;
 
-            const x = Math.floor(jumperX * screenWidth());
-            if (localPlayer && (jumperY < localPlayer.highest - 0.5 || jumperY > localPlayer.highest + 0.5)) {
-                // offscreen so lets draw a marker
-                if (localPlayer.highest < jumperY) {
-                    if (this.players) {
-                        outlineText(x - Math.floor(stringWidth(this.players[jumper.id].displayName, 16) / 2), 70, this.players[jumper.id].displayName, 16, "white", "black", 2);
+                const x = Math.floor(jumperX * screenWidth());
+                if (localPlayer && (jumperY < localPlayer.highest - 0.5 || jumperY > localPlayer.highest + 0.5)) {
+                    // offscreen so lets draw a marker
+                    if (localPlayer.highest < jumperY) {
+                        if (this.players) {
+                            outlineText(x - Math.floor(stringWidth(this.players[jumper.id].displayName, 16) / 2), 70, this.players[jumper.id].displayName, 16, "white", "black", 2);
+                        }
+                        drawImage(this.arrowUp, x - 16, 32, this.arrowUp.width, this.arrowUp.height);
+                    } else {
+                        if (this.players) {
+                            outlineText(x - Math.floor(stringWidth(this.players[jumper.id].displayName, 16) / 2), screenHeight() - 57, this.players[jumper.id].displayName, 16, "white", "black", 2);
+                        }
+                        drawImage(this.arrowDown, x - 16, screenHeight() - 50, this.arrowDown.width, this.arrowDown.height);
                     }
-                    drawImage(this.arrowUp, x - 16, 32, this.arrowUp.width, this.arrowUp.height);
-                } else {
-                    if (this.players) {
-                        outlineText(x - Math.floor(stringWidth(this.players[jumper.id].displayName, 16) / 2), screenHeight() - 57, this.players[jumper.id].displayName, 16, "white", "black", 2);
-                    }
-                    drawImage(this.arrowDown, x - 16, screenHeight() - 50, this.arrowDown.width, this.arrowDown.height);
                 }
             }
         }
