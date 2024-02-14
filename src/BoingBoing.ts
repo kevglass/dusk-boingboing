@@ -304,6 +304,9 @@ export class BoingBoing implements InputEventListener {
         // wait for the assets to load the game state to initialize before
         // rendering anything
         if (!this.assetsLoaded || !this.game) {
+            const message = "Loading...";
+            this.anim += 0.05;
+            drawText(Math.floor((screenWidth() - stringWidth(message, 20))/2), 100 + (Math.sin(this.anim) * 20), message, 20, "white");
             return;
         }
 
