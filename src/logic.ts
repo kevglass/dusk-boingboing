@@ -97,8 +97,8 @@ function generatePlatform(state: GameState, i: number, requiredPlatform: boolean
     ? 0.5 + (Math.random() * platformWidth * 2) - platformWidth
     : Math.random() * (1 - platformWidth);
 
-  const spikes = !requiredPlatform && Math.random() < (0.1 + (i / 3000));
-  const faller = !requiredPlatform && !spikes && (Math.random() < (0.1 + (i / 3000)));
+  const spikes = i > 30 && !requiredPlatform && Math.random() < (0.1 + (i / 3000));
+  const faller = i > 30 && !requiredPlatform && !spikes && (Math.random() < (0.1 + (i / 3000)));
   const spring = !faller && !spikes && (Math.random() < (0.08 + (i / 5000)));
 
   state.platforms[i] = {

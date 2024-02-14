@@ -1,6 +1,6 @@
 import { InterpolatorLatency, Players } from "rune-games-sdk";
 import { Controls, GameEventType, GameState, GameUpdate, gameOver, platformWidth, roundTime } from "./logic";
-import { InputEventListener, drawImage, drawText, fillCircle, fillRect, loadImage, popState, pushState, registerInputEventListener, scale, screenHeight, screenWidth, setAlpha, stringWidth, translate, updateGraphics } from "./renderer/graphics";
+import { InputEventListener, drawImage, drawText, fillCircle, fillRect, loadImage, popState, pushState, registerInputEventListener, scale, screenHeight, screenWidth, stringWidth, translate, updateGraphics } from "./renderer/graphics";
 import { Sound, loadSound, playSound } from "./renderer/sound";
 
 const ASSETS_IMPORTS = import.meta.glob("./assets/**/*", {
@@ -45,7 +45,9 @@ export class BoingBoing implements InputEventListener {
     spikes!: HTMLImageElement;
     spring!: HTMLImageElement;
     enemySprites: Record<string, EnemySprite> = {};
-
+    arrowUp!: HTMLImageElement;
+    arrowDown!: HTMLImageElement;
+    
     sfxBoing!: Sound;
     sfxClick!: Sound;
     sfxFanfare!: Sound;
@@ -92,6 +94,8 @@ export class BoingBoing implements InputEventListener {
             this.handOff = loadImage(ASSETS["./assets/Hand/Clicked.png"]);
             this.spikes = loadImage(ASSETS["./assets/OtherAssets/obstacle.png"]);
             this.spring = loadImage(ASSETS["./assets/spring.png"]);
+            this.arrowUp = loadImage(ASSETS["./assets/arrowup.png"]);
+            this.arrowDown = loadImage(ASSETS["./assets/arrowdown.png"]);
 
             const jumperIds = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
             for (const id of jumperIds) {
@@ -280,6 +284,8 @@ export class BoingBoing implements InputEventListener {
             drawImage(sprite[Math.floor(this.anim * 2) % 4], -Math.floor(width / 2), -Math.floor(height / 2), width, height);
             popState();
         }
+        const myJumper = this.game.jumpers.find(j => j.id === this.localPlayerId);
+
         for (const jumper of this.game.jumpers) {
             const jumperSprite = this.jumpers[jumper.type];
             const frame = jumper.dead ? jumperSprite.die : jumper.vy > 0 && this.game.jumping ? jumperSprite.jump : jumperSprite.idle;
@@ -292,8 +298,11 @@ export class BoingBoing implements InputEventListener {
 
             const x = Math.floor(jumperX * screenWidth()) - Math.floor(width / 2);
             const y = screenHeight() - (Math.floor(jumperY * screenHeight()) + (height * this.jumperHeights[jumper.type]));
-            drawImage(frame, x, y, width, height);
-
+            if (myJumper && (jumperY < myJumper.highest - 0.5 || jumperY > myJumper.highest + 0.5)) {
+                // offscreen so lets draw a marker
+            } else {
+                drawImage(frame, x, y, width, height);
+            }
             if (jumper.id === this.localPlayerId) {
                 if (this.waitingToStart()) {
                     const arrowWidth = width * 0.7;
@@ -320,6 +329,39 @@ export class BoingBoing implements InputEventListener {
         }
         this.anim += 0.05;
         popState();
+        
+        for (const jumper of this.game.jumpers) {
+            if (jumper.dead) {
+                continue;
+            }
+            const jumperSprite = this.jumpers[jumper.type];
+            const frame = jumper.dead ? jumperSprite.die : jumper.vy > 0 && this.game.jumping ? jumperSprite.jump : jumperSprite.idle;
+            const jumperScale = generalScale * 0.5;
+            const width = Math.floor(frame.width * jumperScale);
+            const height = Math.floor(frame.height * jumperScale);
+
+            const jumperX = this.interpolators[jumper.id] ? this.interpolators[jumper.id].getPosition()[0] : jumper.x;
+            const jumperY = this.interpolators[jumper.id] ? this.interpolators[jumper.id].getPosition()[1] : jumper.y;
+
+            const x = Math.floor(jumperX * screenWidth()) - Math.floor(width / 2);
+            const y = screenHeight() - (Math.floor(jumperY * screenHeight()) + (height * this.jumperHeights[jumper.type]));
+            if (myJumper && (jumperY < myJumper.highest - 0.5 || jumperY > myJumper.highest + 0.5)) {
+                // offscreen so lets draw a marker
+                if (myJumper.highest < jumperY) {
+                    if (this.players) {
+                        drawText(x - Math.floor(stringWidth(this.players[myJumper.id].displayName, 20) / 2), 72, this.players[myJumper.id].displayName, 20, "black");
+                        drawText(x - Math.floor(stringWidth(this.players[myJumper.id].displayName, 20) / 2), 70, this.players[myJumper.id].displayName, 20, "white");
+                    }
+                    drawImage(this.arrowUp, x - 16, 32, this.arrowUp.width, this.arrowUp.height);
+                } else {
+                    if (this.players) {
+                        drawText(x - Math.floor(stringWidth(this.players[myJumper.id].displayName, 20) / 2), screenHeight() - 55, this.players[myJumper.id].displayName, 20, "black");
+                        drawText(x - Math.floor(stringWidth(this.players[myJumper.id].displayName, 20) / 2), screenHeight() - 57, this.players[myJumper.id].displayName, 20, "white");
+                    }
+                    drawImage(this.arrowDown, x - 16, screenHeight() - 50, this.arrowDown.width, this.arrowDown.height);
+                }
+            }
+        }
 
         let deadOffset = 0;
 
@@ -472,7 +514,7 @@ export class BoingBoing implements InputEventListener {
         return this.game?.jumpers.length !== Object.values(this.players).length;
     }
 
-    mouseDown(x: number, y: number, index: number): void {
+    mouseDown(x: number, y: number): void {
         if (this.waitingToJoin()) {
             const boxWidth = Math.floor(screenWidth() / 4);
             const boxHeight = Math.floor((boxWidth / this.box.width) * this.box.height);
@@ -497,13 +539,13 @@ export class BoingBoing implements InputEventListener {
         }
     }
 
-    mouseDrag(x: number, y: number, index: number): void {
+    mouseDrag(x: number): void {
         if (!gameOver(this.game) && !this.waitingToJoin()) {
             this.considerTouch(x);
         }
     }
 
-    mouseUp(x: number, y: number, index: number): void {
+    mouseUp(): void {
         this.controls.left = false;
         this.controls.right = false;
     }

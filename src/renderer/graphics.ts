@@ -125,7 +125,7 @@ export function screenHeight(): number {
 export function loadImage(url: string): HTMLImageElement {
     const image = new Image();
     image.src = url
-    image.onerror = (e) => {
+    image.onerror = () => {
         console.log("Failed to load: " + url);
     }
 
