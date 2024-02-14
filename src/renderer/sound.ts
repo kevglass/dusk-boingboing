@@ -11,9 +11,10 @@ export interface Sound {
 
 // load a sound from the URL given. This will also attempt to 
 // buffer the loaded data into an AudioBuffer
-export function loadSound(url: string): Sound {
-    resourceRequested(url);
-
+export function loadSound(url: string, track = true): Sound {
+    if (track) {
+        resourceRequested(url);
+    }
     const result: Sound = {};
 
     const req = new XMLHttpRequest();
@@ -21,7 +22,9 @@ export function loadSound(url: string): Sound {
     req.responseType = "arraybuffer";
 
     req.onload = () => {
-        resourceLoaded(url);
+        if (track) {
+            resourceLoaded(url);
+        }
         const arrayBuffer = req.response;
         if (arrayBuffer) {
             result.data = arrayBuffer;

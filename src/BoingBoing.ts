@@ -18,9 +18,17 @@ const ASSETS: Record<string, string> = {};
 
 // Resolve all the imports for the assets in the src folder
 async function resolveAllAssetImports() {
+    const promises: Promise<unknown>[] = [];
+
     for (const path in ASSETS_IMPORTS) {
-        ASSETS[path] = (await ASSETS_IMPORTS[path]()) as string;
+        const promise = ASSETS_IMPORTS[path]();
+        promises.push(promise);
+        promise.then((result) => {
+            ASSETS[path] = result as string;
+        })
     }
+
+    await Promise.all(promises);
 }
 
 // A background in the game has three layers that are displayed
@@ -85,7 +93,7 @@ export class BoingBoing implements InputEventListener {
     arrowUp!: HTMLImageElement;
     // the arrow that points to a player below you
     arrowDown!: HTMLImageElement;
-    
+
     // Sound effect played when you hit a spring
     sfxBoing!: Sound;
     // Sound effect played for UI interaction
@@ -141,17 +149,14 @@ export class BoingBoing implements InputEventListener {
     // can sometimes hit platforms very close together we don't want the 
     // sound effect being spammed - it hurts your ears!
     lastJumpSfx = 0;
+    // the loading message
+    loadingMessage = "Compressing Springs...";
 
     constructor() {
         // resolve all the packed assets as imports and then load
         // them all using the rendering utilities
         resolveAllAssetImports().then(() => {
-            // loading sound effects for Web Audio
-            this.sfxBoing = loadSound(ASSETS["./assets/boing.mp3"]);
-            this.sfxClick = loadSound(ASSETS["./assets/click.mp3"]);
-            this.sfxUrgh = loadSound(ASSETS["./assets/lose.mp3"]);
-            this.sfxFanfare = loadSound(ASSETS["./assets/win.mp3"]);
-            this.sfxJump = loadSound(ASSETS["./assets/jump.mp3"]);
+            this.loadingMessage = "Releasing birds...";
 
             // loading static individual images 
             this.box = loadImage(ASSETS["./assets/Ui/Box04.png"]);
@@ -191,10 +196,18 @@ export class BoingBoing implements InputEventListener {
             // load the enemy sprites 
             this.enemySprites["bat"] = [];
             this.enemySprites["bird"] = [];
-            for (let i=1;i<5;i++) {
-                this.enemySprites["bat"].push(loadImage(ASSETS["./assets/Enemies/Bat/"+i+".png"]));
-                this.enemySprites["bird"].push(loadImage(ASSETS["./assets/Enemies/Bird/"+i+".png"]));
+            for (let i = 1; i < 5; i++) {
+                this.enemySprites["bat"].push(loadImage(ASSETS["./assets/Enemies/Bat/" + i + ".png"]));
+                this.enemySprites["bird"].push(loadImage(ASSETS["./assets/Enemies/Bird/" + i + ".png"]));
             }
+
+            // loading sound effects for Web Audio
+            this.sfxBoing = loadSound(ASSETS["./assets/boing.mp3"], false);
+            this.sfxClick = loadSound(ASSETS["./assets/click.mp3"], false);
+            this.sfxUrgh = loadSound(ASSETS["./assets/lose.mp3"], false);
+            this.sfxFanfare = loadSound(ASSETS["./assets/win.mp3"], false);
+            this.sfxJump = loadSound(ASSETS["./assets/jump.mp3"], false);
+
         })
 
     }
@@ -234,7 +247,7 @@ export class BoingBoing implements InputEventListener {
         if (update.futureGame) {
             for (const jumper of this.game.jumpers) {
                 if (!this.interpolators[jumper.id]) {
-                    this.interpolators[jumper.id] = jumper.id !== this.localPlayerId ? 
+                    this.interpolators[jumper.id] = jumper.id !== this.localPlayerId ?
                         Rune.interpolatorLatency<number[]>({ maxSpeed: moveSpeed }) :
                         Rune.interpolator<number[]>();
                 }
@@ -307,11 +320,10 @@ export class BoingBoing implements InputEventListener {
         // wait for the assets to load the game state to initialize before
         // rendering anything
         if (!this.assetsLoaded || !this.game) {
-            const message = "Loading...";
             this.anim += 0.05;
-            drawText(Math.floor((screenWidth() - stringWidth(message, 20))/2), 100 + (Math.sin(this.anim) * 20), message, 20, "white");
-            fillRect(Math.floor(screenWidth()/2) - 100, 160, 200, 20, "rgb(50,50,50)");
-            fillRect(Math.floor(screenWidth()/2) - 100, 160, Math.floor(200 * getResourceLoadingProgress()), 20, "rgb(200,200,200)");
+            drawText(Math.floor((screenWidth() - stringWidth(this.loadingMessage, 20)) / 2), 100 + (Math.sin(this.anim) * 20), this.loadingMessage, 20, "white");
+            fillRect(Math.floor(screenWidth() / 2) - 100, 160, 200, 20, "rgb(50,50,50)");
+            fillRect(Math.floor(screenWidth() / 2) - 100, 160, Math.floor(200 * getResourceLoadingProgress()), 20, "rgb(200,200,200)");
             return;
         }
 
@@ -373,7 +385,7 @@ export class BoingBoing implements InputEventListener {
 
             const widthScale = platform.width / platformWidth;
             drawImage(platformSprite, Math.floor(platform.x * screenWidth()), screenHeight() - Math.floor(platform.y * screenHeight()), platformSpriteWidth * widthScale, platformHeight);
-            
+
         }
         // render the contents of the platform afterwards so platforms don't
         // overlay items
@@ -392,9 +404,9 @@ export class BoingBoing implements InputEventListener {
             if (platform.spring) {
                 const widthScale = platform.width / platformWidth;
                 const springHeight = platformHeight / 2;
-                drawImage(this.spring, Math.floor(platform.x * screenWidth()) + (platformSpriteWidth * widthScale / 2) - (this.spring.width * widthScale / 2), 
-                          screenHeight() - Math.floor(platform.y * screenHeight()) - (springHeight * 0.8), 
-                            this.spring.width * widthScale, springHeight);
+                drawImage(this.spring, Math.floor(platform.x * screenWidth()) + (platformSpriteWidth * widthScale / 2) - (platformSpriteWidth * widthScale / 4),
+                    screenHeight() - Math.floor(platform.y * screenHeight()) - (springHeight * 0.8),
+                    platformSpriteWidth * widthScale / 2, springHeight);
             }
         }
 
@@ -406,7 +418,7 @@ export class BoingBoing implements InputEventListener {
             const width = sprite[0].width * generalScale * 0.65;
             const height = sprite[0].height * generalScale * 0.65;
             if (enemy.dir === "left") {
-                scale(-1,1);
+                scale(-1, 1);
             }
             drawImage(sprite[Math.floor(this.anim * 2) % 4], -Math.floor(width / 2), -Math.floor(height / 2), width, height);
             popState();
@@ -468,7 +480,7 @@ export class BoingBoing implements InputEventListener {
             }
         }
         popState();
-        
+
         // update our animation time, this is used to drive some basic animation
         this.anim += 0.05;
 
@@ -555,8 +567,8 @@ export class BoingBoing implements InputEventListener {
             }
 
             // render the big orange start button
-            const startWidth = Math.floor(screenWidth() / 3);
-            const startHeight =  Math.floor((startWidth / this.startButton.width) * this.startButton.height);
+            const startWidth = Math.floor(screenWidth() / 5);
+            const startHeight = Math.floor((startWidth / this.startButton.width) * this.startButton.height);
             drawImage(this.startButton, Math.floor((screenWidth() - startWidth) / 2), screenHeight() - (startHeight * 1.2) - 110, startWidth, startHeight);
 
             // render the score board 

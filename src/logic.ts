@@ -163,7 +163,7 @@ declare global {
 // indicate that the platform is required, this is the case
 // where there hasn't been a normal for a while and the player's won't 
 // be able to progress without a forced normal platform
-function generatePlatform(state: GameState, i: number, requiredPlatform: boolean): Platform {
+function generatePlatform(state: GameState, i: number, requiredPlatform: boolean, lastSpike: number): Platform {
   // generate an x position across the whole screen (or if its a required platform
   // make it roughly central so it can be reached)
   const x = requiredPlatform
@@ -172,7 +172,7 @@ function generatePlatform(state: GameState, i: number, requiredPlatform: boolean
 
   // randomly add in spikes, falling platforms and springs. They all get more
   // likely the further up you go
-  const spikes = i > 30 && !requiredPlatform && Math.random() < (0.1 + (i / 3000));
+  const spikes = (i - lastSpike) > 4 && i > 30 && !requiredPlatform && Math.random() < (0.1 + (i / 3000));
   const faller = i > 30 && !requiredPlatform && !spikes && (Math.random() < (0.1 + (i / 3000)));
   const spring = !faller && !spikes && (Math.random() < (0.08 + (i / 5000)));
 
@@ -226,14 +226,18 @@ function startGame(state: GameState): void {
   // 3) Spikes can be placed but don't count as a valid platform for rule 1
   // 4) Platforms get less likely as we get higher
   let lastValidRow = 0;
+  let lastSpike = 0;
   for (let i = 5; i < 1000; i++) {
     if (i - lastValidRow >= 5) {
-      generatePlatform(state, i, true);
+      generatePlatform(state, i, true, lastSpike);
       lastValidRow = i;
     } else if (Math.random() < (1 - Math.min(0.8, ((i / 50) * 0.1)))) {
-      const platform = generatePlatform(state, i, false);
+      const platform = generatePlatform(state, i, false, lastSpike);
       if (!platform.spikes && !platform.faller) {
         lastValidRow = i;
+      }
+      if (platform.spikes) {
+        lastSpike = i;
       }
     }
   }
