@@ -14,6 +14,10 @@ canvas.style.imageRendering = "pixelated";
 let resourcesRequested = 0;
 let resourcesLoaded = 0;
 
+export function getResourceLoadingProgress(): number {
+    return resourcesLoaded / resourcesRequested;
+}
+
 export function getResourceLoadingStatus(): string {
     return resourcesLoaded + "/" + resourcesRequested;
 }

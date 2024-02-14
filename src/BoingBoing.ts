@@ -1,6 +1,6 @@
 import { Interpolator, Players } from "rune-games-sdk";
 import { Controls, GameEventType, GameState, GameUpdate, gameOver, moveSpeed, platformWidth, roundTime } from "./logic";
-import { InputEventListener, drawImage, drawText, fillCircle, fillRect, getResourceLoadingStatus, loadImage, outlineText, popState, pushState, registerInputEventListener, scale, screenHeight, screenWidth, stringWidth, translate, updateGraphics } from "./renderer/graphics";
+import { InputEventListener, drawImage, drawText, fillCircle, fillRect, getResourceLoadingProgress, getResourceLoadingStatus, loadImage, outlineText, popState, pushState, registerInputEventListener, scale, screenHeight, screenWidth, stringWidth, translate, updateGraphics } from "./renderer/graphics";
 import { Sound, loadSound, playSound } from "./renderer/sound";
 
 const TENTH_OF_A_SECOND_IN_MS = 100;
@@ -310,7 +310,8 @@ export class BoingBoing implements InputEventListener {
             const message = "Loading...";
             this.anim += 0.05;
             drawText(Math.floor((screenWidth() - stringWidth(message, 20))/2), 100 + (Math.sin(this.anim) * 20), message, 20, "white");
-            drawText(Math.floor((screenWidth() - stringWidth(getResourceLoadingStatus(), 20))/2), 160, getResourceLoadingStatus(), 20, "white");
+            fillRect(Math.floor(screenWidth()/2) - 100, 160, 200, 20, "rgb(50,50,50)");
+            fillRect(Math.floor(screenWidth()/2) - 100, 160, Math.floor(200 * getResourceLoadingProgress()), 20, "rgb(200,200,200)");
             return;
         }
 
