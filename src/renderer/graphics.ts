@@ -149,6 +149,15 @@ export function drawTile(tiles: TileSet, x: number, y: number, tile: number, wid
     ctx.drawImage(tiles.image, tx, ty, tiles.tileWidth, tiles.tileHeight, x, y, width, height);
 }
 
+export function outlineText(x: number, y: number, str: string, size: number, col: string, outline: string, outlineWidth: number): void {
+    drawText(x-outlineWidth, y-outlineWidth, str, size, outline);
+    drawText(x+outlineWidth, y-outlineWidth, str, size, outline);
+    drawText(x-outlineWidth, y+outlineWidth, str, size, outline);
+    drawText(x+outlineWidth, y+outlineWidth, str, size, outline);
+
+    drawText(x, y, str, size, col);
+}
+
 // draw text at the given location 
 export function drawText(x: number, y: number, str: string, size: number, col: string): void {
     ctx.fillStyle = col;

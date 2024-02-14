@@ -1,6 +1,6 @@
 import { InterpolatorLatency, Players } from "rune-games-sdk";
 import { Controls, GameEventType, GameState, GameUpdate, gameOver, platformWidth, roundTime } from "./logic";
-import { InputEventListener, drawImage, drawText, fillCircle, fillRect, loadImage, popState, pushState, registerInputEventListener, scale, screenHeight, screenWidth, stringWidth, translate, updateGraphics } from "./renderer/graphics";
+import { InputEventListener, drawImage, drawText, fillCircle, fillRect, loadImage, outlineText, popState, pushState, registerInputEventListener, scale, screenHeight, screenWidth, stringWidth, translate, updateGraphics } from "./renderer/graphics";
 import { Sound, loadSound, playSound } from "./renderer/sound";
 
 const ASSETS_IMPORTS = import.meta.glob("./assets/**/*", {
@@ -349,14 +349,12 @@ export class BoingBoing implements InputEventListener {
                 // offscreen so lets draw a marker
                 if (myJumper.highest < jumperY) {
                     if (this.players) {
-                        drawText(x - Math.floor(stringWidth(this.players[myJumper.id].displayName, 20) / 2), 72, this.players[myJumper.id].displayName, 20, "black");
-                        drawText(x - Math.floor(stringWidth(this.players[myJumper.id].displayName, 20) / 2), 70, this.players[myJumper.id].displayName, 20, "white");
+                        outlineText(x - Math.floor(stringWidth(this.players[myJumper.id].displayName, 16) / 2), 70, this.players[myJumper.id].displayName, 16, "white", "black", 2);
                     }
                     drawImage(this.arrowUp, x - 16, 32, this.arrowUp.width, this.arrowUp.height);
                 } else {
                     if (this.players) {
-                        drawText(x - Math.floor(stringWidth(this.players[myJumper.id].displayName, 20) / 2), screenHeight() - 55, this.players[myJumper.id].displayName, 20, "black");
-                        drawText(x - Math.floor(stringWidth(this.players[myJumper.id].displayName, 20) / 2), screenHeight() - 57, this.players[myJumper.id].displayName, 20, "white");
+                        outlineText(x - Math.floor(stringWidth(this.players[myJumper.id].displayName, 16) / 2), screenHeight() - 57, this.players[myJumper.id].displayName, 16, "white", "black", 2);
                     }
                     drawImage(this.arrowDown, x - 16, screenHeight() - 50, this.arrowDown.width, this.arrowDown.height);
                 }
