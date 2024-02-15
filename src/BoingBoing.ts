@@ -395,7 +395,8 @@ export class BoingBoing implements InputEventListener {
         }
         // render the contents of the platform afterwards so platforms don't
         // overlay items
-        for (const platform of this.game.platforms) {
+        for (let i=0;i<30;i++) {
+            const platform = this.game.platforms[firstVisiblePlatformIndex + i];
             if (!platform) {
                 continue;
             }
