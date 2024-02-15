@@ -14,6 +14,8 @@ canvas.style.imageRendering = "pixelated";
 let resourcesRequested = 0;
 let resourcesLoaded = 0;
 
+const scaledImageCache: Record<string, Record<number, CanvasImageSource>> = {};
+
 export function getResourceLoadingProgress(): number {
     return resourcesLoaded / resourcesRequested;
 }
@@ -155,7 +157,11 @@ export function loadImage(url: string, track = true): HTMLImageElement {
     image.onerror = () => {
         console.log("Failed to load: " + url);
     }
-    image.onload =() => {
+    image.onload = () => {
+        image.id = url;
+        scaledImageCache[image.id] = {};
+        scaledImageCache[image.id][image.width + (image.height * 10000)] = image;
+
         if (track) {
             resourceLoaded(url);
         }
@@ -173,7 +179,7 @@ export function loadTileSet(url: string, tw: number, th: number): TileSet {
     image.onerror = () => {
         console.log("Failed to load: " + url);
     }
-    image.onload =() => {
+    image.onload = () => {
         resourceLoaded(url);
     }
 
@@ -190,10 +196,10 @@ export function drawTile(tiles: TileSet, x: number, y: number, tile: number, wid
 }
 
 export function outlineText(x: number, y: number, str: string, size: number, col: string, outline: string, outlineWidth: number): void {
-    drawText(x-outlineWidth, y-outlineWidth, str, size, outline);
-    drawText(x+outlineWidth, y-outlineWidth, str, size, outline);
-    drawText(x-outlineWidth, y+outlineWidth, str, size, outline);
-    drawText(x+outlineWidth, y+outlineWidth, str, size, outline);
+    drawText(x - outlineWidth, y - outlineWidth, str, size, outline);
+    drawText(x + outlineWidth, y - outlineWidth, str, size, outline);
+    drawText(x - outlineWidth, y + outlineWidth, str, size, outline);
+    drawText(x + outlineWidth, y + outlineWidth, str, size, outline);
 
     drawText(x, y, str, size, col);
 }
@@ -240,7 +246,17 @@ export function fillRect(x: number, y: number, width: number, height: number, co
 
 // draw an image to the canvas 
 export function drawImage(image: HTMLImageElement, x: number, y: number, width: number, height: number): void {
-    ctx.drawImage(image, x, y, width, height);
+    if (image.id) {
+        let cachedScaled = scaledImageCache[image.id][width + (height * 10000)];
+        if (!cachedScaled) {
+            cachedScaled = scaledImageCache[image.id][width + (height * 10000)] = document.createElement("canvas");
+            cachedScaled.width = width;
+            cachedScaled.height = height;
+            cachedScaled.getContext("2d")?.drawImage(image, 0,0, width, height);
+        }
+
+        ctx.drawImage(cachedScaled, x, y);
+    }
 }
 
 // store the current 'state' of the canvas. This includes transforms, alphas, clips etc
