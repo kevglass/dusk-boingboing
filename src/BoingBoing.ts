@@ -154,7 +154,7 @@ export class BoingBoing implements InputEventListener {
 
     // frame render every other for performance on mobile
     // devices
-    renderFrame: number = 0;
+    renderFrame = 0;
 
     constructor() {
         // resolve all the packed assets as imports and then load
