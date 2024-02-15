@@ -15,6 +15,8 @@ let resourcesRequested = 0;
 let resourcesLoaded = 0;
 
 const scaledImageCache: Record<string, Record<number, CanvasImageSource>> = {};
+const pixelScale = window.devicePixelRatio; 
+console.log("Pixel scale: " + pixelScale);
 
 export function getResourceLoadingProgress(): number {
     return resourcesLoaded / resourcesRequested;
@@ -71,7 +73,7 @@ canvas.addEventListener("touchstart", (event) => {
     canvas.focus();
 
     for (const touch of event.changedTouches) {
-        eventListener?.mouseDown(touch.clientX, touch.clientY, touch.identifier);
+        eventListener?.mouseDown(touch.clientX * pixelScale, touch.clientY * pixelScale, touch.identifier);
     }
 
     event.stopPropagation();
@@ -92,7 +94,7 @@ canvas.addEventListener("touchend", (event) => {
     resumeAudioOnInput();
 
     for (const touch of event.changedTouches) {
-        eventListener?.mouseUp(touch.clientX, touch.clientY, touch.identifier);
+        eventListener?.mouseUp(touch.clientX * pixelScale, touch.clientY * pixelScale, touch.identifier);
     }
 
     event.stopPropagation();
@@ -103,7 +105,7 @@ canvas.addEventListener("touchmove", (event) => {
     resumeAudioOnInput();
 
     for (const touch of event.changedTouches) {
-        eventListener?.mouseDrag(touch.clientX, touch.clientY, touch.identifier);
+        eventListener?.mouseDrag(touch.clientX * pixelScale, touch.clientY, touch.identifier);
     }
 
     event.stopPropagation();
@@ -114,7 +116,7 @@ canvas.addEventListener("mousedown", (event) => {
     resumeAudioOnInput();
     canvas.focus();
 
-    eventListener?.mouseDown(event.x, event.y, event.button);
+    eventListener?.mouseDown(event.x * pixelScale, event.y * pixelScale, event.button);
     mouseDown = true;
 
     event.stopPropagation();
@@ -124,7 +126,7 @@ canvas.addEventListener("mousedown", (event) => {
 canvas.addEventListener("mousemove", (event) => {
     resumeAudioOnInput();
     if (mouseDown) {
-        eventListener?.mouseDrag(event.x, event.y, event.button);
+        eventListener?.mouseDrag(event.x * pixelScale,event.y * pixelScale, event.button);
 
         event.stopPropagation();
         event.preventDefault();
@@ -135,7 +137,7 @@ canvas.addEventListener("mouseup", (event) => {
     resumeAudioOnInput();
     mouseDown = false;
 
-    eventListener?.mouseUp(event.x, event.y, event.button);
+    eventListener?.mouseUp(event.x / pixelScale, event.y / pixelScale, event.button);
 
     event.stopPropagation();
 });
@@ -234,8 +236,8 @@ export function centerText(text: string, size: number, y: number, col: string): 
 
 // give the graphics to do anything it needs to do per frame
 export function updateGraphics(): void {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    canvas.width = Math.floor(window.innerWidth * pixelScale);
+    canvas.height = Math.floor(window.innerHeight * pixelScale);
 }
 
 // fill a rectangle to the canvas
@@ -247,12 +249,15 @@ export function fillRect(x: number, y: number, width: number, height: number, co
 // draw an image to the canvas 
 export function drawImage(image: HTMLImageElement, x: number, y: number, width: number, height: number): void {
     if (image.id) {
+        if (width === 0) {
+            return;
+        }
         let cachedScaled = scaledImageCache[image.id][width + (height * 10000)];
         if (!cachedScaled) {
             cachedScaled = scaledImageCache[image.id][width + (height * 10000)] = document.createElement("canvas");
             cachedScaled.width = width;
             cachedScaled.height = height;
-            cachedScaled.getContext("2d")?.drawImage(image, 0,0, width, height);
+            cachedScaled.getContext("2d")?.drawImage(image, 0, 0, width, height);
         }
 
         ctx.drawImage(cachedScaled, x, y);
