@@ -1,5 +1,5 @@
 import { Interpolator, Players } from "rune-games-sdk";
-import { Controls, GameEventType, GameState, GameUpdate, gameOver, moveSpeed, platformWidth, roundTime } from "./logic";
+import { Controls, GameEventType, GameState, GameUpdate, gameOver, moveSpeed, platformWidth, roundTime, rowHeight } from "./logic";
 import { InputEventListener, drawImage, drawText, fillCircle, fillRect, getResourceLoadingProgress, loadImage, outlineText, popState, pushState, registerInputEventListener, scale, screenHeight, screenWidth, stringWidth, translate, updateGraphics } from "./renderer/graphics";
 import { Sound, loadSound, playSound } from "./renderer/sound";
 
@@ -377,7 +377,10 @@ export class BoingBoing implements InputEventListener {
         const platformHeight = generalScale * this.platforms[0].height;
 
         // render all the platforms if they're on screen
-        for (const platform of this.game.platforms) {
+        const firstVisiblePlatformIndex = Math.floor((Math.max(0, highest) - 0.5) / rowHeight);
+        
+        for (let i=0;i<30;i++) {
+            const platform = this.game.platforms[firstVisiblePlatformIndex + i];
             if (!platform) {
                 continue;
             }

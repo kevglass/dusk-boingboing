@@ -6,7 +6,7 @@ export const platformWidth = 1 / 6;
 export const roundTime = 1000 * 60 * 2;
 
 // The height of a row of platforms in screen coordinates
-const rowHeight = 0.05;
+export const rowHeight = 0.05;
 // The velocity applied to cause the jump
 const defaultJumpPower = 0.03;
 // The gravity thats applied every frame - not it's not related to 
