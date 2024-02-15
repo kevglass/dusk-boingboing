@@ -376,10 +376,10 @@ Rune.initLogic({
         // apply gravity to let the players fall
         jumper.vy += gravity;
 
-        // go through 10 steps for movement and collision - we've only got a max
+        // go through 3 steps for movement and collision - we've only got a max
         // or four players and the checks are very light weight so this is more simple
         // than doing a ray cast or similar simultaneous equation.
-        const steps = 10;
+        const steps = 3;
         for (let i = 0; i < steps; i++) {
           // move a little bit of the velocity step
           jumper.y += jumper.vy / steps;
