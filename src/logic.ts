@@ -349,11 +349,9 @@ Rune.initLogic({
       // for any platform thats falling off the screen move it
       // based on gravity - it is fun to see other people's platforms come flying down
       // from above
-      for (const platform of game.platforms) {
-        if (platform && platform.falling) {
-          platform.vy += gravity;
-          platform.y += platform.vy;
-        }
+      for (const platform of game.platforms.filter(p => p && p.falling)) {
+        platform.vy += gravity;
+        platform.y += platform.vy;
       }
 
       // enemies follow a simple pattern, keep moving until you 
