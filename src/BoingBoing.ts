@@ -152,6 +152,10 @@ export class BoingBoing implements InputEventListener {
     // the loading message
     loadingMessage = "Compressing Springs...";
 
+    // frame render every other for performance on mobile
+    // devices
+    renderFrame: number = 0;
+
     constructor() {
         // resolve all the packed assets as imports and then load
         // them all using the rendering utilities
@@ -313,8 +317,15 @@ export class BoingBoing implements InputEventListener {
     // that if something doesn't change every frame then it's not
     // interesting enough visually
     loop(): void {
+        this.renderFrame++;
+
         // schedule the next render
         requestAnimationFrame(() => { this.loop() });
+
+        // only render every other frame
+        if (this.renderFrame % 2 === 0) {
+            return;
+        }
 
         // give the utility classes a chance to update based on 
         // screen size etc
@@ -323,7 +334,7 @@ export class BoingBoing implements InputEventListener {
         // wait for the assets to load the game state to initialize before
         // rendering anything
         if (!this.assetsLoaded || !this.game) {
-            this.anim += 0.05;
+            this.anim += 0.1;
             drawText(Math.floor((screenWidth() - stringWidth(this.loadingMessage, 20)) / 2), 100 + (Math.sin(this.anim) * 20), this.loadingMessage, 20, "white");
             fillRect(Math.floor(screenWidth() / 2) - 100, 160, 200, 20, "rgb(50,50,50)");
             fillRect(Math.floor(screenWidth() / 2) - 100, 160, Math.floor(200 * getResourceLoadingProgress()), 20, "rgb(200,200,200)");
@@ -489,7 +500,7 @@ export class BoingBoing implements InputEventListener {
         popState();
 
         // update our animation time, this is used to drive some basic animation
-        this.anim += 0.05;
+        this.anim += 0.1;
 
         // If the jumpers are offscreen we want to render an arrow pointing to them. We want to 
         // do this in screen space rather than in game space though so a second block here
