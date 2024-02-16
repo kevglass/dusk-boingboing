@@ -1,6 +1,7 @@
 import { Interpolator, Players } from "rune-games-sdk";
 import { Controls, GameEventType, GameState, GameUpdate, gameOver, moveSpeed, platformWidth, roundTime, rowHeight } from "./logic";
 import { Game, Sound, graphics, sound } from "togl";
+import { GameImage } from "togl/dist/graphics";
 
 const TENTH_OF_A_SECOND_IN_MS = 100;
 
@@ -34,9 +35,9 @@ async function resolveAllAssetImports() {
 // over each other and scrolled at different rates to give the 
 // parallax 
 interface BackgroundSprite {
-    layer1: HTMLImageElement;
-    layer2: HTMLImageElement;
-    layer3: HTMLImageElement;
+    layer1: GameImage;
+    layer2: GameImage;
+    layer3: GameImage;
 }
 
 // Any one of our jumper characters has 3 states and an image
@@ -45,14 +46,14 @@ interface BackgroundSprite {
 // jump (on the way up)
 // die (on the way out)
 interface JumperSprite {
-    idle: HTMLImageElement;
-    jump: HTMLImageElement;
-    die: HTMLImageElement;
+    idle: GameImage;
+    jump: GameImage;
+    die: GameImage;
 }
 
 // An enemy sprite in this game has a series of frames of animation - 
 // for a flapping bird or bat
-type EnemySprite = HTMLImageElement[];
+type EnemySprite = GameImage[];
 
 // Main class that receives input from the user and renders the game
 // along with connecting to the Rune logic layer
@@ -65,33 +66,33 @@ export class BoingBoing implements Game {
     // The different themes backgrounds we have - keyed on a theme index
     backgrounds: BackgroundSprite[] = [];
     // The different themes platforms - keyed on a theme index
-    platforms: HTMLImageElement[] = [];
+    platforms: GameImage[] = [];
     // The different themes platform that fall/are broken - keyed on a theme index
-    platformsBroken: HTMLImageElement[] = [];
+    platformsBroken: GameImage[] = [];
     // The different character sprites we allow the player to choose
     jumpers: JumperSprite[] = [];
     // The background box of the selected character on the character select
-    box!: HTMLImageElement;
+    box!: GameImage;
     // The background box of the non-selected characters on the character select
-    boxGrey!: HTMLImageElement;
+    boxGrey!: GameImage;
     // The big orange play button
-    startButton!: HTMLImageElement;
+    startButton!: GameImage;
     // The green arrow that indicates which player you are
-    arrow!: HTMLImageElement;
+    arrow!: GameImage;
     // The hand symbol not pressing the screen to show for instructions
-    handOff!: HTMLImageElement;
+    handOff!: GameImage;
     // The hand symbol pressing the screen to show for instructions
-    handOn!: HTMLImageElement;
+    handOn!: GameImage;
     // The spikes that appear on platforms
-    spikes!: HTMLImageElement;
+    spikes!: GameImage;
     // The spring that appear on platforms
-    spring!: HTMLImageElement;
+    spring!: GameImage;
     // The enemy sprites keyed on the type (bat | bird)
     enemySprites: Record<string, EnemySprite> = {};
     // The arrow that points to a player above you
-    arrowUp!: HTMLImageElement;
+    arrowUp!: GameImage;
     // the arrow that points to a player below you
-    arrowDown!: HTMLImageElement;
+    arrowDown!: GameImage;
 
     // Sound effect played when you hit a spring
     sfxBoing!: Sound;
@@ -140,7 +141,7 @@ export class BoingBoing implements Game {
 
     // images loaded for player avatars - these are done dynamically
     // since they won't be packed with the game
-    avatarImages: Record<string, HTMLImageElement> = {};
+    avatarImages: Record<string, GameImage> = {};
     // interpolators keyed on player ID used to smooth out the 
     // movement of remote players 
     interpolators: Record<string, Interpolator<number[]>> = {};
@@ -579,7 +580,7 @@ export class BoingBoing implements Game {
 
             // render the score board 
             const cols = ["rgba(0,0,0,0.7)", "rgba(10,10,10,0.7)"];
-            const lines: [{ avatar: HTMLImageElement | null, name: string | null, wins: string, best: string }] = [
+            const lines: [{ avatar: GameImage | null, name: string | null, wins: string, best: string }] = [
                 { avatar: null, name: null, wins: "Wins", best: "Best" },
             ];
 
