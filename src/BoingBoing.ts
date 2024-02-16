@@ -218,13 +218,6 @@ export class BoingBoing implements InputEventListener {
 
     resourcesLoaded(): void {
         this.assetsLoaded = true;
-    }
-
-    // start the game
-    start(): void {
-        // register ourselves as the input listener so
-        // we get nofified of mouse presses
-        registerInputEventListener(this);
 
         // tell rune to let us know when a game
         // update happens
@@ -233,6 +226,14 @@ export class BoingBoing implements InputEventListener {
                 this.gameUpdate(update);
             },
         });
+
+    }
+
+    // start the game
+    start(): void {
+        // register ourselves as the input listener so
+        // we get nofified of mouse presses
+        registerInputEventListener(this);
 
         // start the rendering loop
         requestAnimationFrame(() => { this.loop() });
@@ -334,10 +335,6 @@ export class BoingBoing implements InputEventListener {
         // wait for the assets to load the game state to initialize before
         // rendering anything
         if (!this.assetsLoaded || !this.game) {
-            this.anim += 0.1;
-            drawText(Math.floor((screenWidth() - stringWidth(this.loadingMessage, 20)) / 2), 100 + (Math.sin(this.anim) * 20), this.loadingMessage, 20, "white");
-            fillRect(Math.floor(screenWidth() / 2) - 100, 160, 200, 20, "rgb(50,50,50)");
-            fillRect(Math.floor(screenWidth() / 2) - 100, 160, Math.floor(200 * getResourceLoadingProgress()), 20, "rgb(200,200,200)");
             return;
         }
 
