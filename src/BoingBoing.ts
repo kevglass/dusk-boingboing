@@ -1,6 +1,6 @@
 import { Interpolator, Players } from "rune-games-sdk";
 import { Controls, GameEventType, GameState, GameUpdate, gameOver, moveSpeed, platformWidth, roundTime, rowHeight } from "./logic";
-import { InputEventListener, drawImage, drawText, fillCircle, fillRect, getResourceLoadingProgress, loadImage, outlineText, popState, pushState, registerInputEventListener, scale, screenHeight, screenWidth, stringWidth, translate, updateGraphics } from "./renderer/graphics";
+import { InputEventListener, drawImage, drawText, fillCircle, fillRect, loadImage, outlineText, popState, pushState, registerInputEventListener, scale, screenHeight, screenWidth, stringWidth, translate, updateGraphics } from "./renderer/graphics";
 import { Sound, loadSound, playSound } from "./renderer/sound";
 
 const TENTH_OF_A_SECOND_IN_MS = 100;
