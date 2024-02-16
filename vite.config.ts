@@ -13,4 +13,9 @@ export default defineConfig({
   optimizeDeps: {
     include: ['togl'],
   },
+  build: {
+    commonjsOptions: {
+      include: [/togl/],
+    },
+  },
 })
