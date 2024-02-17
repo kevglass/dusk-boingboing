@@ -166,6 +166,7 @@ export class BoingBoing implements Game {
 
     constructor() {
         graphics.init(RendererType.WEBGL);
+
         // resolve all the packed assets as imports and then load
         // them all using the rendering utilities
         resolveAllAssetImports().then(() => {
@@ -176,7 +177,7 @@ export class BoingBoing implements Game {
             this.font30white = graphics.generateFont(30, "white");
             this.font16black = graphics.generateFont(16, "black");
             this.font30black = graphics.generateFont(30, "black");
-            this.font80white = graphics.generateFont(80, "white");
+            this.font80white = graphics.generateFont(80, "white", "123456");
 
             // loading static individual images 
             this.box = graphics.loadImage(ASSETS["./assets/Ui/Box04.png"]);
@@ -437,8 +438,8 @@ export class BoingBoing implements Game {
             const sprite = this.enemySprites[enemy.type];
             graphics.push();
             graphics.translate(enemy.x * graphics.width(), graphics.height() - enemy.y * graphics.height());
-            const width = sprite[0].width * generalScale * 0.65;
-            const height = sprite[0].height * generalScale * 0.65;
+            const width = sprite[0].width * generalScale;
+            const height = sprite[0].height * generalScale;
             if (enemy.dir === "left") {
                 graphics.scale(-1, 1);
             }
@@ -454,7 +455,7 @@ export class BoingBoing implements Game {
 
             // scale everything by the screen and then down again by 
             // half to make them look about right on screen
-            const jumperScale = generalScale * 0.5;
+            const jumperScale = generalScale * 0.8;
             const width = Math.floor(frame.width * jumperScale);
             const height = Math.floor(frame.height * jumperScale);
 
@@ -585,7 +586,7 @@ export class BoingBoing implements Game {
                     graphics.drawImage(this.box, Math.floor(graphics.width() * 0.125) + (x * boxWidth), 50 + (y * boxHeight), boxWidth - 5, boxHeight - 5);
                 }
                 const frame = this.jumpers[i].idle;
-                const selectScale = generalScale * 0.5;
+                const selectScale = generalScale * 0.8;
                 graphics.drawImage(frame, Math.floor(graphics.width() * 0.12) + (x * boxWidth) + Math.floor(boxWidth / 2) - Math.floor(frame.width * selectScale * 0.5),
                     50 + Math.floor((y + 0.02) * boxHeight), frame.width * selectScale, frame.height * selectScale);
             }
