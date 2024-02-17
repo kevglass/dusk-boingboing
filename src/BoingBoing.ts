@@ -1,7 +1,7 @@
 import { Interpolator, Players } from "rune-games-sdk";
 import { Controls, GameEventType, GameState, GameUpdate, gameOver, moveSpeed, platformWidth, roundTime, rowHeight } from "./logic";
-import { Game, Sound, graphics, sound } from "togl";
-import { GameImage } from "togl/dist/graphics";
+import { Game, RendererType, Sound, graphics, sound } from "togl";
+import { GameFont, GameImage } from "togl";
 
 const TENTH_OF_A_SECOND_IN_MS = 100;
 
@@ -156,11 +156,26 @@ export class BoingBoing implements Game {
     // devices
     renderFrame = 0;
 
+    font16white!: GameFont;
+    font12white!: GameFont;
+    font30white!: GameFont;
+    font30black!: GameFont;
+    font16black!: GameFont;
+    font80white!: GameFont;
+
     constructor() {
+        graphics.init(RendererType.WEBGL);
         // resolve all the packed assets as imports and then load
         // them all using the rendering utilities
         resolveAllAssetImports().then(() => {
             this.loadingMessage = "Releasing birds...";
+
+            this.font12white = graphics.generateFont(12, "white");
+            this.font16white = graphics.generateFont(16, "white");
+            this.font30white = graphics.generateFont(30, "white");
+            this.font16black = graphics.generateFont(16, "black");
+            this.font30black = graphics.generateFont(30, "black");
+            this.font80white = graphics.generateFont(80, "white");
 
             // loading static individual images 
             this.box = graphics.loadImage(ASSETS["./assets/Ui/Box04.png"]);
@@ -478,7 +493,7 @@ export class BoingBoing implements Game {
                     graphics.fillRect(0, y, graphics.width(), 23, "rgba(0,0,0,0.5)");
                     graphics.fillRect(0, y, graphics.width(), 3, "white");
                     if (this.players) {
-                        graphics.drawText(10, y + 18, this.players[jumper.id].displayName, 16, "white");
+                        graphics.drawText(10, y + 18, this.players[jumper.id].displayName, this.font16white);
                     }
                     continue;
                 }
@@ -506,12 +521,12 @@ export class BoingBoing implements Game {
                     // offscreen so lets draw a marker
                     if (localPlayer.highest < jumperY) {
                         if (this.players) {
-                            graphics.outlineText(x - Math.floor(graphics.textWidth(this.players[jumper.id].displayName, 16) / 2), 70, this.players[jumper.id].displayName, 16, "white", "black", 2);
+                            graphics.outlineText(x - Math.floor(graphics.textWidth(this.players[jumper.id].displayName, this.font16black) / 2), 70, this.players[jumper.id].displayName, this.font16white, 2, this.font16black);
                         }
                         graphics.drawImage(this.arrowUp, x - 16, 32, this.arrowUp.width, this.arrowUp.height);
                     } else {
                         if (this.players) {
-                            graphics.outlineText(x - Math.floor(graphics.textWidth(this.players[jumper.id].displayName, 16) / 2), graphics.height() - 57, this.players[jumper.id].displayName, 16, "white", "black", 2);
+                            graphics.outlineText(x - Math.floor(graphics.textWidth(this.players[jumper.id].displayName, this.font16black) / 2), graphics.height() - 57, this.players[jumper.id].displayName,  this.font16white, 2, this.font16black);
                         }
                         graphics.drawImage(this.arrowDown, x - 16, graphics.height() - 50, this.arrowDown.width, this.arrowDown.height);
                     }
@@ -532,8 +547,8 @@ export class BoingBoing implements Game {
             const mins = Math.floor(remaining / 60);
             const timeStr = mins + ":" + (secs < 10 ? "0" : "") + secs;
             graphics.fillRect(0, 0, graphics.width(), 38, "rgba(0,0,0,0.5");
-            graphics.drawText(graphics.width() - 5 - graphics.textWidth(timeStr, 30), 34, timeStr, 30, "black");
-            graphics.drawText(graphics.width() - 5 - graphics.textWidth(timeStr, 30), 30, timeStr, 30, "white");
+            graphics.drawText(graphics.width() - 5 - graphics.textWidth(timeStr, this.font30black), 34, timeStr, this.font30black);
+            graphics.drawText(graphics.width() - 5 - graphics.textWidth(timeStr, this.font30white), 30, timeStr, this.font30white);
         }
 
         // render any players that have already died as mini-sprites in the top left of the
@@ -605,13 +620,13 @@ export class BoingBoing implements Game {
                         graphics.drawImage(line.avatar, 5, (graphics.height() - 110) + (i * 20) + 2, 16, 16);
                     }
                     if (line.name) {
-                        graphics.drawText(25, (graphics.height() - 110) + (i * 20) + 14, line.name, 12, "white");
+                        graphics.drawText(25, (graphics.height() - 110) + (i * 20) + 14, line.name, this.font12white);
                     }
                     if (line.wins) {
-                        graphics.drawText(graphics.width() - 100 - Math.floor(graphics.textWidth(line.wins, 12) / 2), (graphics.height() - 110) + (i * 20) + 14, line.wins, 12, "white");
+                        graphics.drawText(graphics.width() - 100 - Math.floor(graphics.textWidth(line.wins, this.font12white) / 2), (graphics.height() - 110) + (i * 20) + 14, line.wins, this.font12white);
                     }
                     if (line.best) {
-                        graphics.drawText(graphics.width() - 30 - Math.floor(graphics.textWidth(line.best, 12) / 2), (graphics.height() - 110) + (i * 20) + 14, line.best, 12, "white");
+                        graphics.drawText(graphics.width() - 30 - Math.floor(graphics.textWidth(line.best, this.font12white) / 2), (graphics.height() - 110) + (i * 20) + 14, line.best, this.font12white);
                     }
                 }
             }
@@ -622,8 +637,10 @@ export class BoingBoing implements Game {
             const tilStart = Math.ceil((this.game.startAt - Rune.gameTime()) / 1000);
             if (tilStart <= 5 && tilStart > 0) {
                 const secs = "" + tilStart;
-                graphics.fillCircle(Math.floor(graphics.width() / 2), 150, 90, "rgba(0,0,0,0.5)")
-                graphics.drawText(Math.floor((graphics.width() - graphics.textWidth(secs, 80)) / 2), 180, secs, 80, "white");
+
+                // TODO: Use sprite
+                // graphics.fillCircle(Math.floor(graphics.width() / 2), 150, 90, "rgba(0,0,0,0.5)")
+                graphics.drawText(Math.floor((graphics.width() - graphics.textWidth(secs, this.font80white)) / 2), 180, secs, this.font80white);
             }
             this.drawInstructions();
         } else if (gameOver(this.game) && this.players) {
@@ -641,7 +658,7 @@ export class BoingBoing implements Game {
             graphics.fillRect(0, frame.height + 40, graphics.width(), 135, "rgba(0,0,0,0.5)")
             let offset = 0;
             for (const line of lines) {
-                graphics.drawText(Math.floor((graphics.width() - graphics.textWidth(line, 30)) / 2), frame.height + 80 + offset, line, 30, "white");
+                graphics.drawText(Math.floor((graphics.width() - graphics.textWidth(line, this.font30white)) / 2), frame.height + 80 + offset, line, this.font30white);
                 offset += 35;
             }
         }
