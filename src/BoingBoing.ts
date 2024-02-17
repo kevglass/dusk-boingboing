@@ -93,6 +93,7 @@ export class BoingBoing implements Game {
     arrowUp!: GameImage;
     // the arrow that points to a player below you
     arrowDown!: GameImage;
+    blackCircle!: GameImage;
 
     // Sound effect played when you hit a spring
     sfxBoing!: Sound;
@@ -188,6 +189,7 @@ export class BoingBoing implements Game {
             this.spring = graphics.loadImage(ASSETS["./assets/spring.png"]);
             this.arrowUp = graphics.loadImage(ASSETS["./assets/arrowup.png"]);
             this.arrowDown = graphics.loadImage(ASSETS["./assets/arrowdown.png"]);
+            this.blackCircle = graphics.loadImage(ASSETS["./assets/blackcircle.png"]);
 
             // load up the character assets
             const jumperIds = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
@@ -546,7 +548,7 @@ export class BoingBoing implements Game {
             const secs = remaining % 60;
             const mins = Math.floor(remaining / 60);
             const timeStr = mins + ":" + (secs < 10 ? "0" : "") + secs;
-            graphics.fillRect(0, 0, graphics.width(), 38, "rgba(0,0,0,0.5");
+            graphics.fillRect(0, 0, graphics.width(), 38, "rgba(0,0,0,0.5)");
             graphics.drawText(graphics.width() - 5 - graphics.textWidth(timeStr, this.font30black), 34, timeStr, this.font30black);
             graphics.drawText(graphics.width() - 5 - graphics.textWidth(timeStr, this.font30white), 30, timeStr, this.font30white);
         }
@@ -638,8 +640,9 @@ export class BoingBoing implements Game {
             if (tilStart <= 5 && tilStart > 0) {
                 const secs = "" + tilStart;
 
-                // TODO: Use sprite
-                // graphics.fillCircle(Math.floor(graphics.width() / 2), 150, 90, "rgba(0,0,0,0.5)")
+                graphics.alpha(0.5);
+                graphics.drawImage(this.blackCircle, Math.floor(graphics.width() / 2) - 90, 60);
+                graphics.alpha(1);
                 graphics.drawText(Math.floor((graphics.width() - graphics.textWidth(secs, this.font80white)) / 2), 180, secs, this.font80white);
             }
             this.drawInstructions();
