@@ -8,15 +8,15 @@ export const roundTime = 1000 * 60 * 2;
 // The height of a row of platforms in screen coordinates
 export const rowHeight = 0.05;
 // The velocity applied to cause the jump
-const defaultJumpPower = 0.03;
+const defaultJumpPower = 0.04;
 // The gravity thats applied every frame - not it's not related to 
 // earth's gravity at all. It's just a value that "feels" right
-const gravity = -0.0015;
+const gravity = -0.003;
 // Half of the player's width - used for collision checks where
 // the distance is from the middle of the player
 const playerHalfWidth = 0.03;
 // The speed the players will move horizontally
-export const moveSpeed = 0.02;
+export const moveSpeed = 0.03;
 
 // Game events that can occur in the game loop and the renderer 
 // wants to respond to
@@ -55,9 +55,9 @@ export interface Jumper {
   // The Rune ID for the player controlling this jumper
   id: string;
   // x position of the player as a factory of screen width
-  x: number; 
+  x: number;
   // y position of the player as a factory of screen width
-  y: number; 
+  y: number;
   // The highest position this player has reached (their score)
   highest: number;
   // The character type that they're using
@@ -91,9 +91,9 @@ export interface Enemy {
 
 export interface Platform {
   // the x position of the platform as a factory of screen width
-  x: number; 
+  x: number;
   // the y position of the platform as a factory of screen height
-  y: number; 
+  y: number;
   // The width of the platform, most of them are the same but theres
   // flexibility here for the first platform
   width: number;
@@ -118,6 +118,8 @@ export interface GameState {
   jumpers: Jumper[],
   // The platforms they can jump on
   platforms: Platform[],
+  // the platforms that are currently falling
+  falling: number[],
   // The enemies that will kill them if they touch
   enemies: Enemy[],
   // The time at which the game starts for all players
@@ -205,6 +207,7 @@ function startGame(state: GameState): void {
   state.jumpers = [];
   state.platforms = [];
   state.enemies = [];
+  state.falling = [];
 
   // select a random theme
   state.theme = Math.floor(Math.random() * 5);
@@ -273,6 +276,7 @@ Rune.initLogic({
     const initialState: GameState = {
       jumpers: [],
       platforms: [],
+      falling: [],
       enemies: [],
       startAt: -1,
       jumping: false,
@@ -296,7 +300,7 @@ Rune.initLogic({
       context.game.jumpers = context.game.jumpers.filter(j => j.id !== playerId);
     }
   },
-  updatesPerSecond: 30,
+  updatesPerSecond: 20,
   update: (context) => {
     const game = context.game;
     game.events = [];
@@ -349,9 +353,13 @@ Rune.initLogic({
       // for any platform thats falling off the screen move it
       // based on gravity - it is fun to see other people's platforms come flying down
       // from above
-      for (const platform of game.platforms.filter(p => p && p.falling)) {
-        platform.vy += gravity;
-        platform.y += platform.vy;
+      for (const id of game.falling) {
+        const platform = game.platforms[id];
+
+        if (platform && platform.y > 0) {
+          platform.vy += gravity;
+          platform.y += platform.vy;
+        }
       }
 
       // enemies follow a simple pattern, keep moving until you 
@@ -376,60 +384,55 @@ Rune.initLogic({
         // apply gravity to let the players fall
         jumper.vy += gravity;
 
-        // go through 3 steps for movement and collision - we've only got a max
-        // or four players and the checks are very light weight so this is more simple
-        // than doing a ray cast or similar simultaneous equation.
-        const steps = 3;
-        for (let i = 0; i < steps; i++) {
-          // move a little bit of the velocity step
-          jumper.y += jumper.vy / steps;
+        // move a little bit of the velocity step
+        jumper.y += jumper.vy;
 
-          // can't land of platforms if you're dead, just fall off screen
-          if (jumper.dead) {
-            continue;
-          }
-          if (gameOver(game)) {
-            continue;
-          }
+        // can't land of platforms if you're dead, just fall off screen
+        if (jumper.dead) {
+          continue;
+        }
+        if (gameOver(game)) {
+          continue;
+        }
 
-          // if we're falling down, then look for a platform
-          // to land on
-          if (jumper.vy < 0) {
-            const index = Math.floor(jumper.y / rowHeight);
-            // we can index since we know that platforms of evenly spaced
-            const platform = game.platforms[index];
+        // if we're falling down, then look for a platform
+        // to land on
+        if (jumper.vy < 0) {
+          const index = Math.floor(jumper.y / rowHeight);
+          // we can index since we know that platforms of evenly spaced
+          const platform = game.platforms[index];
 
-            // if the platform is falling we can't stand on it 
-            if (platform && !platform.falling) {
-              // is the jumper on the right horizontal segment to match the platform
-              if (jumper.x > platform.x - playerHalfWidth && jumper.x < platform.x + platform.width + playerHalfWidth) {
-                // landed on the platform
+          // if the platform is falling we can't stand on it 
+          if (platform && !platform.falling) {
+            // is the jumper on the right horizontal segment to match the platform
+            if (jumper.x > platform.x - playerHalfWidth && jumper.x < platform.x + platform.width + playerHalfWidth) {
+              // landed on the platform
 
-                // spikes on the platform, kill the player
-                if (platform.spikes) {
-                  jumper.dead = true;
-                  game.events.push({ type: GameEventType.DIE, playerId: jumper.id });
-                }
-                // if the platform falls when landed on, start the fall
-                if (platform.faller) {
-                  platform.falling = true;
-                }
-
-                // we hit a platform so undo any penetration of the player into the 
-                // platform by setting the y co-ordinate to the platform's position
-                jumper.y = platform.y;
-                // apply the jump - if theres a spring scale it up
-
-                jumper.vy = platform.spring ? defaultJumpPower * 1.5 : defaultJumpPower;
-                if (!platform.spikes) {
-                  if (platform.spring) {
-                    game.events.push({ type: GameEventType.SPRING, playerId: jumper.id });
-                  } else {
-                    game.events.push({ type: GameEventType.BOUNCE, playerId: jumper.id });
-                  }
-                }
-                break;
+              // spikes on the platform, kill the player
+              if (platform.spikes) {
+                jumper.dead = true;
+                game.events.push({ type: GameEventType.DIE, playerId: jumper.id });
               }
+              // if the platform falls when landed on, start the fall
+              if (platform.faller && !platform.falling) {
+                platform.falling = true;
+                game.falling.push(index);
+              }
+
+              // we hit a platform so undo any penetration of the player into the 
+              // platform by setting the y co-ordinate to the platform's position
+              jumper.y = platform.y;
+              // apply the jump - if theres a spring scale it up
+
+              jumper.vy = platform.spring ? defaultJumpPower * 1.5 : defaultJumpPower;
+              if (!platform.spikes) {
+                if (platform.spring) {
+                  game.events.push({ type: GameEventType.SPRING, playerId: jumper.id });
+                } else {
+                  game.events.push({ type: GameEventType.BOUNCE, playerId: jumper.id });
+                }
+              }
+              break;
             }
           }
         }

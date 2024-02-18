@@ -481,7 +481,7 @@ export class BoingBoing implements Game {
                     const arrowWidth = width * 0.7;
                     const arrowHeight = Math.floor((arrowWidth / this.arrow.width) * this.arrow.height);
                     const arrowX = Math.floor(jumper.x * graphics.width()) - Math.floor(arrowWidth / 2);
-                    const arrowY = y - (height * 1.1) + Math.floor(Math.sin(this.anim) * height * 0.4)
+                    const arrowY = Math.floor(y - (height * 1.1) + Math.floor(Math.sin(this.anim) * height * 0.4));
                     graphics.drawImage(this.arrow, arrowX, arrowY, arrowWidth, arrowHeight);
                 }
             }
@@ -665,6 +665,10 @@ export class BoingBoing implements Game {
                 graphics.drawText(Math.floor((graphics.width() - graphics.textWidth(line, this.font30white)) / 2), frame.height + 80 + offset, line, this.font30white);
                 offset += 35;
             }
+        }
+
+        if (window.location.protocol === "http:") {
+            graphics.drawText(0, 20, "FPS: " + graphics.getFPS(), this.font16white);
         }
     }
 
