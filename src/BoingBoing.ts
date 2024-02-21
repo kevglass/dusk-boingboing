@@ -1,7 +1,6 @@
 import { Interpolator, Players } from "rune-games-sdk";
 import { Controls, GameEventType, GameState, GameUpdate, gameOver, moveSpeed, platformWidth, roundTime, rowHeight } from "./logic";
-import { Game, RendererType, Sound, graphics, sound } from "togl";
-import { GameFont, GameImage } from "togl";
+import { graphics, sound } from "togl";
 
 const TENTH_OF_A_SECOND_IN_MS = 100;
 
@@ -35,9 +34,9 @@ async function resolveAllAssetImports() {
 // over each other and scrolled at different rates to give the 
 // parallax 
 interface BackgroundSprite {
-    layer1: GameImage;
-    layer2: GameImage;
-    layer3: GameImage;
+    layer1: graphics.GameImage;
+    layer2: graphics.GameImage;
+    layer3: graphics.GameImage;
 }
 
 // Any one of our jumper characters has 3 states and an image
@@ -46,18 +45,18 @@ interface BackgroundSprite {
 // jump (on the way up)
 // die (on the way out)
 interface JumperSprite {
-    idle: GameImage;
-    jump: GameImage;
-    die: GameImage;
+    idle: graphics.GameImage;
+    jump: graphics.GameImage;
+    die: graphics.GameImage;
 }
 
 // An enemy sprite in this game has a series of frames of animation - 
 // for a flapping bird or bat
-type EnemySprite = GameImage[];
+type EnemySprite = graphics.GameImage[];
 
 // Main class that receives input from the user and renders the game
 // along with connecting to the Rune logic layer
-export class BoingBoing implements Game {
+export class BoingBoing implements graphics.Game {
     // The assets for the jumper are all random sizes, to make them look right
     // we have the height of each asset to position the jumpers against
     // the platforms
@@ -66,45 +65,45 @@ export class BoingBoing implements Game {
     // The different themes backgrounds we have - keyed on a theme index
     backgrounds: BackgroundSprite[] = [];
     // The different themes platforms - keyed on a theme index
-    platforms: GameImage[] = [];
+    platforms: graphics.GameImage[] = [];
     // The different themes platform that fall/are broken - keyed on a theme index
-    platformsBroken: GameImage[] = [];
+    platformsBroken: graphics.GameImage[] = [];
     // The different character sprites we allow the player to choose
     jumpers: JumperSprite[] = [];
     // The background box of the selected character on the character select
-    box!: GameImage;
+    box!: graphics.GameImage;
     // The background box of the non-selected characters on the character select
-    boxGrey!: GameImage;
+    boxGrey!: graphics.GameImage;
     // The big orange play button
-    startButton!: GameImage;
+    startButton!: graphics.GameImage;
     // The green arrow that indicates which player you are
-    arrow!: GameImage;
+    arrow!: graphics.GameImage;
     // The hand symbol not pressing the screen to show for instructions
-    handOff!: GameImage;
+    handOff!: graphics.GameImage;
     // The hand symbol pressing the screen to show for instructions
-    handOn!: GameImage;
+    handOn!: graphics.GameImage;
     // The spikes that appear on platforms
-    spikes!: GameImage;
+    spikes!: graphics.GameImage;
     // The spring that appear on platforms
-    spring!: GameImage;
+    spring!: graphics.GameImage;
     // The enemy sprites keyed on the type (bat | bird)
     enemySprites: Record<string, EnemySprite> = {};
     // The arrow that points to a player above you
-    arrowUp!: GameImage;
+    arrowUp!: graphics.GameImage;
     // the arrow that points to a player below you
-    arrowDown!: GameImage;
-    blackCircle!: GameImage;
+    arrowDown!: graphics.GameImage;
+    blackCircle!: graphics.GameImage;
 
-    // Sound effect played when you hit a spring
-    sfxBoing!: Sound;
-    // Sound effect played for UI interaction
-    sfxClick!: Sound;
-    // Sound effect for winning the game
-    sfxFanfare!: Sound;
-    // Sound effect for dieing
-    sfxUrgh!: Sound;
-    // Sound effect for each jump 
-    sfxJump!: Sound;
+    // sound.Sound effect played when you hit a spring
+    sfxBoing!: sound.Sound;
+    // sound.Sound effect played for UI interaction
+    sfxClick!: sound.Sound;
+    // sound.Sound effect for winning the game
+    sfxFanfare!: sound.Sound;
+    // sound.Sound effect for dieing
+    sfxUrgh!: sound.Sound;
+    // sound.Sound effect for each jump 
+    sfxJump!: sound.Sound;
 
     // True if all the assets have been loaded - or rather
     // asked to load and a holder created
@@ -142,13 +141,13 @@ export class BoingBoing implements Game {
 
     // images loaded for player avatars - these are done dynamically
     // since they won't be packed with the game
-    avatarImages: Record<string, GameImage> = {};
+    avatarImages: Record<string, graphics.GameImage> = {};
     // interpolators keyed on player ID used to smooth out the 
     // movement of remote players 
     interpolators: Record<string, Interpolator<number[]>> = {};
-    // The time in ms that the last jump sound effect was played, since you
+    // The time in ms that the last jump sound.Sound effect was played, since you
     // can sometimes hit platforms very close together we don't want the 
-    // sound effect being spammed - it hurts your ears!
+    // sound.Sound effect being spammed - it hurts your ears!
     lastJumpSfx = 0;
     // the loading message
     loadingMessage = "Compressing Springs...";
@@ -157,15 +156,15 @@ export class BoingBoing implements Game {
     // devices
     renderFrame = 0;
 
-    font16white!: GameFont;
-    font12white!: GameFont;
-    font30white!: GameFont;
-    font30black!: GameFont;
-    font16black!: GameFont;
-    font80white!: GameFont;
+    font16white!: graphics.GameFont;
+    font12white!: graphics.GameFont;
+    font30white!: graphics.GameFont;
+    font30black!: graphics.GameFont;
+    font16black!: graphics.GameFont;
+    font80white!: graphics.GameFont;
 
     constructor() {
-        graphics.init(RendererType.WEBGL);
+        graphics.init(graphics.RendererType.WEBGL);
 
         // resolve all the packed assets as imports and then load
         // them all using the rendering utilities
@@ -223,7 +222,7 @@ export class BoingBoing implements Game {
                 this.enemySprites["bird"].push(graphics.loadImage(ASSETS["./assets/Enemies/Bird/" + i + ".png"]));
             }
 
-            // loading sound effects for Web Audio
+            // loading sound.Sound effects for Web Audio
             this.sfxBoing = sound.loadSound(ASSETS["./assets/boing.mp3"], false);
             this.sfxClick = sound.loadSound(ASSETS["./assets/click.mp3"], false);
             this.sfxUrgh = sound.loadSound(ASSETS["./assets/lose.mp3"], false);
@@ -284,9 +283,9 @@ export class BoingBoing implements Game {
 
         // The logic layer runs an update loop of its own and events can 
         // take place in it. These are recorded in the game state each frame
-        // so we can render or play sounds appropriately
+        // so we can render or play sound.Sounds appropriately
         for (const event of this.game.events) {
-            // if we jumped then play a sound - only if it's us jumping and not
+            // if we jumped then play a sound.Sound - only if it's us jumping and not
             // another player or it gets very loud
             if (event.type === GameEventType.BOUNCE && event.playerId === this.localPlayerId) {
                 if (Date.now() - this.lastJumpSfx > 200) {
@@ -302,7 +301,7 @@ export class BoingBoing implements Game {
             if (event.type === GameEventType.START_NEW_GAME) {
                 this.interpolators = {};
             }
-            // The local player died, play the death sound effect
+            // The local player died, play the death sound.Sound effect
             if (event.type === GameEventType.DIE && event.playerId === this.localPlayerId) {
                 sound.playSound(this.sfxUrgh);
             }
@@ -598,7 +597,7 @@ export class BoingBoing implements Game {
 
             // render the score board 
             const cols = ["rgba(0,0,0,0.7)", "rgba(10,10,10,0.7)"];
-            const lines: [{ avatar: GameImage | null, name: string | null, wins: string, best: string }] = [
+            const lines: [{ avatar: graphics.GameImage | null, name: string | null, wins: string, best: string }] = [
                 { avatar: null, name: null, wins: "Wins", best: "Best" },
             ];
 
