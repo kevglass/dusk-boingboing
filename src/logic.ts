@@ -8,7 +8,7 @@ export const roundTime = 1000 * 60 * 2;
 // The height of a row of platforms in screen coordinates
 export const rowHeight = 0.05;
 // The velocity applied to cause the jump
-const defaultJumpPower = 0.04;
+const defaultJumpPower = 0.045;
 // The gravity thats applied every frame - not it's not related to 
 // earth's gravity at all. It's just a value that "feels" right
 const gravity = -0.003;
