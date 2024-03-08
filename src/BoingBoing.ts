@@ -348,7 +348,15 @@ export class BoingBoing implements graphics.Game {
         // we'll scroll the view so our players is in the middle of the screen (that the - 0.5) - 
         // but its not quite that the simple, we actually want to scroll the view so we're looking at the highest
         // point that the player has reached, this is how they can fall of the screen
-        const localPlayer = this.game.jumpers.find(j => j.id === this.localPlayerId);
+        let localPlayer = this.game.jumpers.find(j => j.id === this.localPlayerId);
+        if (!localPlayer) {
+            localPlayer = this.game.jumpers[0];
+            for (const jumper of this.game.jumpers) {
+                if (jumper.y > localPlayer.y) {
+                    localPlayer = jumper;
+                }
+            }
+        }
         const localPlayerY = localPlayer ? this.interpolators[localPlayer.id] ? this.interpolators[localPlayer.id].getPosition()[1] : localPlayer.y : 0;
         const highest = localPlayer?.dead ? Math.max(0, localPlayerY) : Math.max(localPlayer?.highest ?? 0, localPlayerY);
 
@@ -569,7 +577,7 @@ export class BoingBoing implements graphics.Game {
 
         // if we haven't joined yet then render the character selection screen
         // and the score board
-        if (this.waitingToJoin()) {
+        if (this.waitingToJoin() && this.localPlayerId) {
             graphics.fillRect(0, 0, graphics.width(), graphics.height(), "rgba(0,0,0,0.5)")
             // draw the level select if we're not in game
             const boxWidth = Math.floor(graphics.width() / 4);
@@ -633,7 +641,7 @@ export class BoingBoing implements graphics.Game {
                 }
             }
 
-        } else if (!this.game.jumping) {
+        } else if (!this.game.jumping && this.localPlayerId) {
             // if the game is about to start then render the 3/2/1 countdown
             // int he middle of the screen based on how much time there is remaining
             const tilStart = Math.ceil((this.game.startAt - Rune.gameTime()) / 1000);
