@@ -1,6 +1,6 @@
 import { Interpolator, Players } from "rune-games-sdk";
 import { Controls, GameEventType, GameState, GameUpdate, gameOver, moveSpeed, platformWidth, roundTime, rowHeight } from "./logic";
-import { graphics, sound } from "togl";
+import { graphics, sound } from "toglib";
 
 const TENTH_OF_A_SECOND_IN_MS = 100;
 
