@@ -1,4 +1,4 @@
-import { Interpolator, Players } from "rune-games-sdk";
+import { Interpolator, Players } from "dusk-games-sdk";
 import { Controls, GameEventType, GameState, GameUpdate, gameOver, moveSpeed, platformWidth, roundTime, rowHeight } from "./logic";
 import { graphics, sound } from "toglib";
 
@@ -238,7 +238,7 @@ export class BoingBoing implements graphics.Game {
 
         // tell rune to let us know when a game
         // update happens
-        Rune.initClient({
+        Dusk.initClient({
             onChange: (update) => {
                 this.gameUpdate(update);
             },
@@ -267,8 +267,8 @@ export class BoingBoing implements graphics.Game {
             for (const jumper of this.game.jumpers) {
                 if (!this.interpolators[jumper.id]) {
                     this.interpolators[jumper.id] = jumper.id !== this.localPlayerId ?
-                        Rune.interpolatorLatency<number[]>({ maxSpeed: moveSpeed }) :
-                        Rune.interpolator<number[]>();
+                        Dusk.interpolatorLatency<number[]>({ maxSpeed: moveSpeed }) :
+                        Dusk.interpolator<number[]>();
                 }
 
                 const futureJumper = update.futureGame.jumpers.find(j => j.id === jumper.id);
@@ -319,7 +319,7 @@ export class BoingBoing implements graphics.Game {
             if (this.sentControls.left !== this.controls.left ||
                 this.sentControls.right !== this.controls.right) {
                 if (Date.now() - this.lastControlsSent > TENTH_OF_A_SECOND_IN_MS) {
-                    Rune.actions.controls({ controls: { ...this.controls } });
+                    Dusk.actions.controls({ controls: { ...this.controls } });
                     this.sentControls.left = this.controls.left;
                     this.sentControls.right = this.controls.right;
                     this.lastControlsSent = Date.now();
@@ -548,7 +548,7 @@ export class BoingBoing implements graphics.Game {
 
         // if the game has started render the count down clock.
         if (this.game.startAt !== -1) {
-            let remaining = (roundTime - (Rune.gameTime() - this.game.startAt));
+            let remaining = (roundTime - (Dusk.gameTime() - this.game.startAt));
             remaining = Math.min(roundTime, remaining);
             remaining = Math.max(0, remaining);
             remaining = Math.floor(remaining / 1000);
@@ -644,7 +644,7 @@ export class BoingBoing implements graphics.Game {
         } else if (!this.game.jumping && this.localPlayerId) {
             // if the game is about to start then render the 3/2/1 countdown
             // int he middle of the screen based on how much time there is remaining
-            const tilStart = Math.ceil((this.game.startAt - Rune.gameTime()) / 1000);
+            const tilStart = Math.ceil((this.game.startAt - Dusk.gameTime()) / 1000);
             if (tilStart <= 5 && tilStart > 0) {
                 const secs = "" + tilStart;
 
@@ -728,7 +728,7 @@ export class BoingBoing implements graphics.Game {
             const startHeight = Math.floor((startWidth / this.startButton.width) * this.startButton.height);
             if (y > graphics.height() - (startHeight * 1.2) - 110) {
                 // start button
-                Rune.actions.join({ type: this.selectedType });
+                Dusk.actions.join({ type: this.selectedType });
                 sound.playSound(this.sfxClick);
             } else {
                 const xp = Math.floor((x - Math.floor(graphics.width() * 0.125)) / boxWidth);

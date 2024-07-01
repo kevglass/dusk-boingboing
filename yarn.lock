@@ -565,11 +565,6 @@ balanced-match@^1.0.0:
   resolved "https://registry.npmjs.org/balanced-match/-/balanced-match-1.0.2.tgz"
   integrity sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==
 
-base-64@1.0.0:
-  version "1.0.0"
-  resolved "https://registry.npmjs.org/base-64/-/base-64-1.0.0.tgz"
-  integrity sha512-kwDPIFCGx0NZHog36dj+tHiwP4QMzsZ3AgMViUBKI0+V5n4U0ufTCUMhnQ04diaRI8EX/QcPfql7zlhZ7j4zgg==
-
 brace-expansion@^1.1.7:
   version "1.1.11"
   resolved "https://registry.npmjs.org/brace-expansion/-/brace-expansion-1.1.11.tgz"
@@ -666,11 +661,6 @@ convert-source-map@^2.0.0:
   resolved "https://registry.npmjs.org/convert-source-map/-/convert-source-map-2.0.0.tgz"
   integrity sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==
 
-core-js@3.31.1:
-  version "3.31.1"
-  resolved "https://registry.npmjs.org/core-js/-/core-js-3.31.1.tgz"
-  integrity sha512-2sKLtfq1eFST7l7v62zaqXacPc7uG8ZAya8ogijLhTtaKNcpzpB4TMoTw2Si+8GYKRwFPMMtUT0263QFWFfqyQ==
-
 cross-spawn@^7.0.2:
   version "7.0.3"
   resolved "https://registry.npmjs.org/cross-spawn/-/cross-spawn-7.0.3.tgz"
@@ -711,6 +701,11 @@ doctrine@^3.0.0:
   dependencies:
     esutils "^2.0.2"
 
+dusk-games-sdk@^4.19.17, dusk-games-sdk@>=4.16.0:
+  version "4.20.0"
+  resolved "https://registry.npmjs.org/dusk-games-sdk/-/dusk-games-sdk-4.20.0.tgz"
+  integrity sha512-8tTCILzqIeWVmQ1eJVzuYE2kJCboI8/OVr0k2+i8nzjA0n+HU3meP1NoZiMf8/LDayIeP+cxBhF+RbAF8OUGzQ==
+
 electron-to-chromium@^1.4.648:
   version "1.4.664"
   resolved "https://registry.npmjs.org/electron-to-chromium/-/electron-to-chromium-1.4.664.tgz"
@@ -728,6 +723,11 @@ enquirer@^2.3.5:
   dependencies:
     ansi-colors "^4.1.1"
     strip-ansi "^6.0.1"
+
+es-module-lexer@^1.4.2:
+  version "1.5.4"
+  resolved "https://registry.npmjs.org/es-module-lexer/-/es-module-lexer-1.5.4.tgz"
+  integrity sha512-MVNK56NiMrOwitFB7cqDwq0CQutbw+0BvLshJSse0MUNU+y1FC3bUS/AQg7oUng+/wKrrki7JfmwtVHkVfPLlw==
 
 esbuild@^0.18.10:
   version "0.18.20"
@@ -767,6 +767,11 @@ escape-string-regexp@^1.0.5:
   resolved "https://registry.npmjs.org/escape-string-regexp/-/escape-string-regexp-1.0.5.tgz"
   integrity sha512-vbRorB5FUQWvla16U8R/qgaFIya2qGzwDrNmCZuYKrbdSUMG6I1ZCGQRefkRVhuOkIGVne7BQ35DSfo1qvJqFg==
 
+eslint-plugin-dusk@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.npmjs.org/eslint-plugin-dusk/-/eslint-plugin-dusk-1.0.1.tgz"
+  integrity sha512-GgOsfosNfv95U+QcpbiehCzyVEfVC/h4mDGuOzy1J6FciryVuWqR5iX/yErxeaAOK0fGtuQn8wUloDaaLg9tTQ==
+
 eslint-plugin-react-hooks@^4.6.0:
   version "4.6.0"
   resolved "https://registry.npmjs.org/eslint-plugin-react-hooks/-/eslint-plugin-react-hooks-4.6.0.tgz"
@@ -776,11 +781,6 @@ eslint-plugin-react-refresh@^0.3.4:
   version "0.3.5"
   resolved "https://registry.npmjs.org/eslint-plugin-react-refresh/-/eslint-plugin-react-refresh-0.3.5.tgz"
   integrity sha512-61qNIsc7fo9Pp/mju0J83kzvLm0Bsayu7OQSLEoJxLDCBjIIyb87bkzufoOvdDxLkSlMfkF7UxomC4+eztUBSA==
-
-eslint-plugin-rune@^0.2.0:
-  version "0.2.0"
-  resolved "https://registry.npmjs.org/eslint-plugin-rune/-/eslint-plugin-rune-0.2.0.tgz"
-  integrity sha512-ryBC0eU7xZ26xKQ88QHITZlhpZO7xVgQG+7LJQQUoHuvlTqklkzJf/PRkthch5KRu5SVHqJvtZ5zz04uWnIPfA==
 
 eslint-scope@^5.1.1:
   version "5.1.1"
@@ -954,6 +954,11 @@ fill-range@^7.0.1:
   integrity sha512-qOo9F+dMUmC2Lcb4BbVvnKJxTPjCm+RRpe4gDuGrzkL7mEVl/djYSu2OdQ2Pa302N4oqkSg9ir6jaLWJ2USVpQ==
   dependencies:
     to-regex-range "^5.0.1"
+
+find-insert-index@0.0.1:
+  version "0.0.1"
+  resolved "https://registry.npmjs.org/find-insert-index/-/find-insert-index-0.0.1.tgz"
+  integrity sha512-eIqFuQzY7XwpAJ3sHWKFNGLx1nm3w/IhmFASETcx5sUuCaOUd3xDqRK/376SzXMVVJQaJUCPlS7L841T0xpFjQ==
 
 flat-cache@^3.0.4:
   version "3.2.0"
@@ -1160,11 +1165,6 @@ json5@^2.2.3:
   resolved "https://registry.npmjs.org/json5/-/json5-2.2.3.tgz"
   integrity sha512-XmOWe7eyHYH14cLdVPoyg+GOH3rYX++KpzrylJwSW98t3Nk+U8XOl8FWKOgwtzdb8lXGf6zYwDUzeHMWfxasyg==
 
-just-clone@6.2.0:
-  version "6.2.0"
-  resolved "https://registry.npmjs.org/just-clone/-/just-clone-6.2.0.tgz"
-  integrity sha512-1IynUYEc/HAwxhi3WDpIpxJbZpMCvvrrmZVqvj9EhpvbH8lls7HhdhiByjL7DkAaWlLIzpC0Xc/VPvy/UxLNjA==
-
 keyv@^4.5.3:
   version "4.5.4"
   resolved "https://registry.npmjs.org/keyv/-/keyv-4.5.4.tgz"
@@ -1216,6 +1216,11 @@ merge2@^1.3.0, merge2@^1.4.1:
   resolved "https://registry.npmjs.org/merge2/-/merge2-1.4.1.tgz"
   integrity sha512-8q7VEgMJW4J8tcfVPy8g09NcQwZdbwFEqhe/WZkoIzjn/3TGDwtOCYtXGxA3O8tPzpczCCDgv+P2P5y00ZJOOg==
 
+mergesort@0.0.1:
+  version "0.0.1"
+  resolved "https://registry.npmjs.org/mergesort/-/mergesort-0.0.1.tgz"
+  integrity sha512-WKghTBzqAvTt9rG5TWS78Dmk2kCCL9VkkX8Zi9kKfJ4iqYpvcGGpeYtkhPHa9NZAPLivZiZsdO/LBG3ENayDmQ==
+
 micromatch@^4.0.4:
   version "4.0.5"
   resolved "https://registry.npmjs.org/micromatch/-/micromatch-4.0.5.tgz"
@@ -1235,11 +1240,6 @@ ms@2.1.2:
   version "2.1.2"
   resolved "https://registry.npmjs.org/ms/-/ms-2.1.2.tgz"
   integrity sha512-sGkPx+VjMtmA6MX27oA4FBFELFCZZ4S4XqeGOXCv68tT+jb3vk/RyaKWP0PTKyWtmLSM0b+adUTEvbs1PEaH2w==
-
-mutative@0.7.1:
-  version "0.7.1"
-  resolved "https://registry.npmjs.org/mutative/-/mutative-0.7.1.tgz"
-  integrity sha512-R5EhjpPbUX9uTPn5GT1Nz6NqGdoeb5PfDy7AO3lKMEOH++XD1cljRM7WGA9JIKF2VZdigGGwrskxBc4RDSmGQQ==
 
 nanoid@^3.3.7:
   version "3.3.7"
@@ -1412,23 +1412,6 @@ run-parallel@^1.1.9:
   dependencies:
     queue-microtask "^1.2.2"
 
-rune-games-sdk@^4.16.0, rune-games-sdk@>=4.16.0:
-  version "4.16.26"
-  resolved "https://registry.npmjs.org/rune-games-sdk/-/rune-games-sdk-4.16.26.tgz"
-  integrity sha512-/ZVqHzMmibOHmM0UTB7HO2aOJFPtpMqA3cAtUj2e4xWDcHgnf17s/6Lqj/23D8cROV0xLzJrfT4UgYdHW7hDUQ==
-  dependencies:
-    base-64 "1.0.0"
-    core-js "3.31.1"
-    just-clone "6.2.0"
-    mutative "0.7.1"
-    rune-msgpack "1.0.0"
-    xstate "4.32.1"
-
-rune-msgpack@1.0.0:
-  version "1.0.0"
-  resolved "https://registry.npmjs.org/rune-msgpack/-/rune-msgpack-1.0.0.tgz"
-  integrity sha512-LAs357MySa4eDJ/GewuBizHllx8C9/hFvwjwkWPNgv8X0HraHLROE+E8oFFc5L0tGPgyrTbvvfQVVzOc/y7dfw==
-
 scheduler@^0.23.0:
   version "0.23.0"
   resolved "https://registry.npmjs.org/scheduler/-/scheduler-0.23.0.tgz"
@@ -1571,11 +1554,19 @@ to-regex-range@^5.0.1:
     is-number "^7.0.0"
 
 "toglib@file:../togl":
-  version "1.1.1"
+  version "1.1.3"
   resolved "file:../togl"
   dependencies:
     potpack "^2.0.0"
     typescript "^5.3.3"
+
+tree-model@^1.0.7:
+  version "1.0.7"
+  resolved "https://registry.npmjs.org/tree-model/-/tree-model-1.0.7.tgz"
+  integrity sha512-oP4LUbCVtD2gcjcRaeI4L5hY60tHzB+AK/bthIJ2Pq1EUUOio5/xFzPWnGoBZlhtqpqbOkhFDzKIwKLOn0kccQ==
+  dependencies:
+    find-insert-index "0.0.1"
+    mergesort "0.0.1"
 
 tslib@^1.8.1:
   version "1.14.1"
@@ -1626,6 +1617,16 @@ v8-compile-cache@^2.0.3:
   resolved "https://registry.npmjs.org/v8-compile-cache/-/v8-compile-cache-2.4.0.tgz"
   integrity sha512-ocyWc3bAHBB/guyqJQVI5o4BZkPhznPYUG2ea80Gond/BgNWpap8TOmLSeeQG7bnh2KMISxskdADG59j7zruhw==
 
+vite-plugin-dusk@^1.0.0:
+  version "1.0.1"
+  resolved "https://registry.npmjs.org/vite-plugin-dusk/-/vite-plugin-dusk-1.0.1.tgz"
+  integrity sha512-3XESIx7auBQsLNtLvkBr5lgW9AzW7U35EX/ioI/ztVB5iKe0Nmix0nD5SJO6V21mfrTtKZC+G9RUuEsA9/L9VQ==
+  dependencies:
+    es-module-lexer "^1.4.2"
+    okie "^1.0.1"
+    terser "^5.22.0"
+    tree-model "^1.0.7"
+
 vite-plugin-qrcode@^0.2.2:
   version "0.2.3"
   resolved "https://registry.npmjs.org/vite-plugin-qrcode/-/vite-plugin-qrcode-0.2.3.tgz"
@@ -1633,15 +1634,7 @@ vite-plugin-qrcode@^0.2.2:
   dependencies:
     qrcode-terminal "^0.12.0"
 
-vite-plugin-rune@^0.2.0:
-  version "0.2.0"
-  resolved "https://registry.npmjs.org/vite-plugin-rune/-/vite-plugin-rune-0.2.0.tgz"
-  integrity sha512-K5to7vbM/c8OqGBen9Q+DPkNtz7mT37YgFUeIy/3XNiFOGIgivUHKzKCnh3wZlqaU1WgSube+6kAr7x09NGqlg==
-  dependencies:
-    okie "^1.0.1"
-    terser "^5.22.0"
-
-"vite@^3.0.0 || ^4.0.0 || ^5.0.0", vite@^4, "vite@^4.2.0 || ^5.0.0", vite@^4.3.2:
+"vite@^3.0.0 || ^4.0.0 || ^5.0.0", "vite@^4.2.0 || ^5.0.0", vite@^4.3.2, vite@>=4:
   version "4.5.2"
   resolved "https://registry.npmjs.org/vite/-/vite-4.5.2.tgz"
   integrity sha512-tBCZBNSBbHQkaGyhGCDUGqeo2ph8Fstyp6FMSvTtsXeZSPpSMGlviAOav2hxVTqFcx8Hj/twtWKsMJXNY0xI8w==
@@ -1663,11 +1656,6 @@ wrappy@1:
   version "1.0.2"
   resolved "https://registry.npmjs.org/wrappy/-/wrappy-1.0.2.tgz"
   integrity sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==
-
-xstate@4.32.1:
-  version "4.32.1"
-  resolved "https://registry.npmjs.org/xstate/-/xstate-4.32.1.tgz"
-  integrity sha512-QYUd+3GkXZ8i6qdixnOn28bL3EvA++LONYL/EMWwKlFSh/hiLndJ8YTnz77FDs+JUXcwU7NZJg7qoezoRHc4GQ==
 
 yallist@^3.0.2:
   version "3.1.1"
