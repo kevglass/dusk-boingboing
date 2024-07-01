@@ -1,4 +1,4 @@
-import type { PlayerId, Players, DuskClient, OnChangeParams } from "dusk-games-sdk"
+import type { DuskClient, OnChangeParams } from "dusk-games-sdk"
 
 // The width of a platform in screen coordinates (we get 6 platforms across the screen)
 export const platformWidth = 1 / 6;
