@@ -1,4 +1,4 @@
-import type { DuskClient, OnChangeParams } from "dusk-games-sdk"
+import type { RuneClient, OnChangeParams } from "rune-sdk"
 
 // The width of a platform in screen coordinates (we get 6 platforms across the screen)
 export const platformWidth = 1 / 6;
@@ -149,7 +149,7 @@ type GameActions = {
 }
 
 declare global {
-  const Dusk: DuskClient<GameState, GameActions>
+  const Rune: RuneClient<GameState, GameActions>
 }
 
 // Generate a platform at a particular level - note that we can 
@@ -187,7 +187,7 @@ export function gameOver(state: GameState | undefined): boolean {
     return false;
   }
 
-  return !state.jumpers.find(j => !j.dead) || (Dusk.gameTime() - state?.startAt > roundTime);
+  return !state.jumpers.find(j => !j.dead) || (Rune.gameTime() - state?.startAt > roundTime);
 }
 
 // start a new game and generate the platforms
@@ -256,7 +256,7 @@ function startGame(state: GameState): void {
   state.gameRestartTime = -1;
 }
 
-Dusk.initLogic({
+Rune.initLogic({
   minPlayers: 1,
   maxPlayers: 4,
   setup: (): GameState => {
@@ -299,7 +299,7 @@ Dusk.initLogic({
     // then stop the game and declare the winner
     if (game.jumping) {
       if (game.gameRestartTime === -1 && gameOver(game)) {
-        game.gameRestartTime = Dusk.gameTime() + 3000;
+        game.gameRestartTime = Rune.gameTime() + 3000;
         game.events.push({ type: GameEventType.WIN });
         const winner = [...game.jumpers].sort((a, b) => b.highest - a.highest)[0];
         if (game.scores[winner.id] === undefined) {
@@ -310,7 +310,7 @@ Dusk.initLogic({
     }
     // once the restart time is reached we go back to character selection
     // and generate a new map
-    if (game.gameRestartTime !== -1 && Dusk.gameTime() > game.gameRestartTime) {
+    if (game.gameRestartTime !== -1 && Rune.gameTime() > game.gameRestartTime) {
       startGame(game);
       return;
     }
@@ -321,14 +321,14 @@ Dusk.initLogic({
       // timer for the game beginning
       if (game.jumpers.length === context.allPlayerIds.length) {
         if (game.startAt === -1) {
-          game.startAt = Dusk.gameTime() + (1000 * 3);
+          game.startAt = Rune.gameTime() + (1000 * 3);
           game.events.push({ type: GameEventType.START_NEW_GAME });
         }
       }
 
       // if the start timer has run out then start the
       // game and let people start jumping!
-      if (game.startAt > 0 && Dusk.gameTime() > game.startAt) {
+      if (game.startAt > 0 && Rune.gameTime() > game.startAt) {
         // start the game
         game.jumping = true;
 
